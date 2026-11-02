@@ -90,7 +90,14 @@ export type ZernioEvent = {
     /** Cuándo lo mandó la persona, ISO-8601. Ver `zernioSentAtSeconds`. */
     sentAt?: string;
     attachments?: { type?: string; url?: string }[];
-    sender?: { id?: string; name?: string | null; username?: string | null };
+    sender?: {
+      id?: string;
+      name?: string | null;
+      username?: string | null;
+      /** Petrominal: WhatsApp por Zernio trae el teléfono y el BSUID de Meta. */
+      phoneNumber?: string | null;
+      businessScopedUserId?: string | null;
+    };
   };
   /** 022: el hilo también viene aparte; su `id` es el `conversationId`. */
   conversation?: { id?: string };

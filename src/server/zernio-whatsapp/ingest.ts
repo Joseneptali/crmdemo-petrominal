@@ -24,6 +24,8 @@ export type ZernioWhatsappInbound = {
   accountRef: string;
   senderId: string;
   phone: string | null;
+  /** BSUID de Meta, si Zernio lo manda: reconcilia con la Cloud API directa. */
+  waUserId: string | null;
   messageId: string;
   text: string | null;
   type: string;
@@ -91,7 +93,8 @@ export function normalizeZernioWhatsappEvent(payload: unknown): ZernioWhatsappIn
     {
       accountRef,
       senderId,
-      phone: telefonoDelRemitente(senderId),
+      phone: telefonoDelRemitente(sender?.phoneNumber || senderId),
+      waUserId: sender?.businessScopedUserId?.trim() || null,
       messageId,
       text,
       type,
@@ -123,12 +126,12 @@ export async function processZernioWhatsappEvent(payload: unknown): Promise<void
       continue;
     }
     const identity: ResolvedIdentity = evt.phone
-      ? { identity: evt.phone, channel: "whatsapp", phone: evt.phone, waUserId: null, profileName: evt.profileName }
+      ? { identity: evt.phone, channel: "whatsapp", phone: evt.phone, waUserId: evt.waUserId, profileName: evt.profileName }
       : {
           identity: `zw:${evt.senderId}`,
           channel: "whatsapp",
           phone: null,
-          waUserId: null,
+          waUserId: evt.waUserId,
           profileName: evt.profileName,
         };
     await ingestInboundMessage({

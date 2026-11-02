@@ -1,6 +1,9 @@
 import { getEnv } from "@/lib/env";
 import { isValidSignature, isValidWebhookToken } from "@/server/inbox/webhook";
 import { recibirEvento } from "@/server/webhooks/recibir";
+import { parseZernioEvent, zernioSignatureFrom } from "@/server/zernio";
+import { isAuthenticZernioDelivery } from "@/server/zernio/dispatch";
+import { esEventoWhatsapp } from "@/server/zernio-whatsapp/ingest";
 
 /**
  * Webhook público de WhatsApp (contrato webhook.md).
@@ -40,6 +43,19 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const rawBody = await req.text();
+
+  // Petrominal — una entrega de Zernio que llegó a la URL de Meta (se pegó la
+  // URL equivocada en Zernio): se atiende igual, con la firma de Zernio.
+  const zernio = parseZernioEvent(rawBody);
+  if (zernio && esEventoWhatsapp(zernio)) {
+    if (!(await isAuthenticZernioDelivery(rawBody, zernioSignatureFrom(req.headers)))) {
+      console.warn("[zernio-wa] entrega en la URL de Meta rechazada por firma inválida (401)");
+      return new Response(null, { status: 401 });
+    }
+    console.info("[zernio-wa] entrega recibida en la URL de Meta (/wa/): se procesa como Zernio");
+    return recibirEvento("zernio", zernio, rawBody, "zernio-wa");
+  }
+
   const signature = req.headers.get("x-hub-signature-256");
   if (!isValidSignature(rawBody, signature, env.META_APP_SECRET)) {
     return new Response(null, { status: 401 });
