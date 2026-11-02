@@ -1,0 +1,2 @@
+ALTER TABLE "petrominal_ajustes" ADD COLUMN "firmar_mensajes" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "petrominal_ajustes" ADD COLUMN "presentar_asesor" boolean DEFAULT true NOT NULL;

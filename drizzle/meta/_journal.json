@@ -232,6 +232,13 @@
       "when": 1793594615325,
       "tag": "0032_aromatic_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793599544348,
+      "tag": "0033_safe_jackal",
+      "breakpoints": true
     }
   ]
 }
