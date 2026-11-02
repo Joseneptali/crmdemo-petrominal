@@ -5,6 +5,7 @@ import {
   Inbox,
   Kanban,
   ListChecks,
+  Package,
   Settings,
   Sparkles,
   Users,
@@ -60,6 +61,8 @@ export function appNavGroups({
     { href: "/inbox", label: "Bandeja", icon: Inbox, badge: true },
     { href: "/pipeline", label: "Pipeline", icon: Kanban },
     { href: "/contacts", label: "Contactos", icon: Users },
+    // Petrominal — el catálogo del cotizador.
+    { href: "/catalogo", label: "Catálogo", icon: Package },
   ];
   // Citas va después de Contactos: es el paso siguiente de un trato, no una
   // sección aparte.

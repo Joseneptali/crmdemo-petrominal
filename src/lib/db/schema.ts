@@ -1401,3 +1401,45 @@ export const conversationNote = pgTable(
     index("conversation_note_conv_idx").on(t.organizationId, t.conversationId, t.createdAt),
   ]
 );
+
+/* ============================================================
+ * Petrominal — Catálogo de productos (cotizador)
+ * ============================================================ */
+
+/**
+ * Un producto que se puede cotizar. La carga inicial sale del inventario de
+ * Siigo (`origen = "siigo"`); lo que crea un asesor desde el cotizador queda
+ * con `origen = "manual"`. El precio NO vive aquí: lo digita el asesor en cada
+ * cotización. La foto es obligatoria para cotizar, por eso se guarda la
+ * marca de cuándo se subió (`foto_version`) para invalidar caché.
+ */
+export const producto = pgTable(
+  "producto",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** Referencia de fábrica (Siigo), p. ej. `11-3-60`. Única por organización. */
+    referencia: text("referencia").notNull(),
+    descripcion: text("descripcion").notNull(),
+    linea: text("linea").notNull().default(""),
+    grupo: text("grupo").notNull().default(""),
+    marca: text("marca").notNull().default(""),
+    unidad: text("unidad").notNull().default("UND"),
+    codigoBarras: text("codigo_barras"),
+    origen: text("origen", { enum: ["siigo", "manual"] }).notNull().default("manual"),
+    /** Tipo MIME de la foto guardada en MEDIA_DIR; NULL = sin foto. */
+    fotoMime: text("foto_mime"),
+    /** Cambia con cada foto nueva: va en la URL como `?v=` para la caché. */
+    fotoVersion: integer("foto_version").notNull().default(0),
+    creadoPor: text("creado_por").references(() => user.id, { onDelete: "set null" }),
+    activo: boolean("activo").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("producto_org_ref_uq").on(t.organizationId, t.referencia),
+    index("producto_org_linea_idx").on(t.organizationId, t.linea),
+  ]
+);
