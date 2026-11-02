@@ -225,6 +225,13 @@
       "when": 1793594367331,
       "tag": "0031_natural_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793594615325,
+      "tag": "0032_aromatic_namora",
+      "breakpoints": true
     }
   ]
 }
