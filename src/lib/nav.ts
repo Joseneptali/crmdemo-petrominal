@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   CalendarDays,
   FileText,
   ChartColumn,
@@ -65,6 +66,7 @@ export function appNavGroups({
     // Petrominal — el catálogo del cotizador.
     { href: "/catalogo", label: "Catálogo", icon: Package },
     { href: "/cotizaciones", label: "Cotizaciones", icon: FileText },
+    { href: "/reuniones", label: "Reuniones", icon: CalendarClock },
   ];
   // Citas va después de Contactos: es el paso siguiente de un trato, no una
   // sección aparte.

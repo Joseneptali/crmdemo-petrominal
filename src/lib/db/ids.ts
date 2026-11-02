@@ -47,6 +47,7 @@ const prefixes = {
   cotizacion: "cot",
   cotizacionItem: "coti",
   asesorCorreo: "acor",
+  reunion: "reu",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

@@ -1613,3 +1613,41 @@ export const asesorCorreo = pgTable(
   },
   (t) => [uniqueIndex("asesor_correo_org_user_uq").on(t.organizationId, t.userId)]
 );
+
+/**
+ * Petrominal — reunión de un asesor con un cliente. Aparte de la agenda del
+ * agente (`booking`), que es un solo calendario: aquí cada asesor tiene la
+ * suya y dos asesores pueden reunirse a la misma hora.
+ * `recordatorios` guarda cuáles ya salieron: `{ "24h": iso, "1h": iso }`.
+ */
+export const reunion = pgTable(
+  "reunion",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    asesorUserId: text("asesor_user_id").references(() => user.id, { onDelete: "set null" }),
+    titulo: text("titulo").notNull(),
+    inicio: timestamp("inicio").notNull(),
+    duracionMin: integer("duracion_min").notNull().default(30),
+    /** Dirección, o enlace de videollamada. */
+    lugar: text("lugar"),
+    notas: text("notas"),
+    correoCliente: text("correo_cliente"),
+    estado: text("estado", { enum: ["programada", "realizada", "cancelada"] })
+      .notNull()
+      .default("programada"),
+    invitacion: jsonb("invitacion").$type<Record<string, unknown>>(),
+    recordatorios: jsonb("recordatorios").$type<Record<string, string>>(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("reunion_org_inicio_idx").on(t.organizationId, t.inicio),
+    index("reunion_org_asesor_idx").on(t.organizationId, t.asesorUserId),
+  ]
+);

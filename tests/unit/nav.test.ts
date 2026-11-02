@@ -20,7 +20,7 @@ describe("barra lateral agrupada", () => {
     const groups = appNavGroups({ role: "member" });
     expect(groups.map((g) => g.title)).toEqual(["Trabajo", "Agente", undefined]);
     expect(labels(groups)).toEqual([
-      ["Bandeja", "Pipeline", "Contactos", "Catálogo", "Cotizaciones"],
+      ["Bandeja", "Pipeline", "Contactos", "Catálogo", "Cotizaciones", "Reuniones"],
       ["Agente", "Laboratorio"],
       ["Resultados"],
     ]);
@@ -34,6 +34,7 @@ describe("barra lateral agrupada", () => {
       "Contactos",
       "Catálogo",
       "Cotizaciones",
+      "Reuniones",
       "Citas",
     ]);
     expect(trabajo!.items.at(-1)!.href).toBe("/bookings");

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { FileText, UserRound } from "lucide-react";
+import { CalendarClock, FileText, UserRound } from "lucide-react";
 import type { EquipoDto, MiembroDto } from "@/lib/asesores";
 
 /**
@@ -80,6 +80,12 @@ export function AsesorCard({ contactId, refreshKey = 0 }: { contactId: string; r
         className="mt-3 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium hover:bg-accent"
       >
         <FileText className="h-4 w-4" /> Nueva cotización
+      </Link>
+      <Link
+        href={`/reuniones?contacto=${contactId}`}
+        className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium hover:bg-accent"
+      >
+        <CalendarClock className="h-4 w-4" /> Programar reunión
       </Link>
     </section>
   );

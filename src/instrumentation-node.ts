@@ -5,6 +5,7 @@ import { leerConfigDespacho } from "@/server/brains/config";
 import { iniciarWorker, tanda } from "@/server/dispatch/worker";
 import { cifrarSecretosEnClaro } from "@/server/zernio/secreto-guardado";
 import { barrido, iniciarBarrido } from "@/server/webhooks/worker";
+import { iniciarRecordatorios, pasadaDeRecordatorios } from "@/server/reuniones";
 
 /**
  * 008 — Aviso al arranque si MEDIA_DIR no es escribible. Sin esto, el primer
@@ -122,4 +123,7 @@ export function resumeDispatch(): void {
 export function resumeWebhooks(): void {
   iniciarBarrido();
   void barrido();
+  // Petrominal — recordatorios de reuniones (24 h y 1 h antes).
+  iniciarRecordatorios();
+  void pasadaDeRecordatorios();
 }
