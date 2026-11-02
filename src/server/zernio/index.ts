@@ -166,6 +166,8 @@ export async function sendZernioMessage(input: {
   /** Fuera de la ventana de 24 h, la única etiqueta admitida. */
   humanAgentTag?: boolean;
   idempotencyKey?: string;
+  /** Petrominal: adjunto por URL pública (Zernio lo descarga). */
+  attachment?: { url: string; type: "image" | "video" | "audio" | "file"; name?: string };
 }): Promise<ZernioSendResult> {
   if (!input.conversationId) {
     throw new MetaApiError(
@@ -176,8 +178,13 @@ export async function sendZernioMessage(input: {
 
   const body: Record<string, unknown> = {
     accountId: input.accountId,
-    message: input.text,
   };
+  if (input.text) body.message = input.text;
+  if (input.attachment) {
+    body.attachmentUrl = input.attachment.url;
+    body.attachmentType = input.attachment.type;
+    if (input.attachment.name) body.attachmentName = input.attachment.name;
+  }
   if (input.humanAgentTag) {
     body.messagingType = "MESSAGE_TAG";
     body.messageTag = "HUMAN_AGENT";

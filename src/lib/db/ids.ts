@@ -44,6 +44,9 @@ const prefixes = {
   // Petrominal — catálogo y cotizador
   producto: "prd",
   petrominalAjustes: "paj",
+  cotizacion: "cot",
+  cotizacionItem: "coti",
+  asesorCorreo: "acor",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

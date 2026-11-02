@@ -29,8 +29,8 @@ export type ResumenCatalogo = {
   lineas: { linea: string; total: number }[];
 };
 
-/** Tipos de imagen aceptados para la foto de un producto. */
-export const FOTO_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
+/** JPG o PNG: son los que se pueden incrustar en el PDF de la cotización. */
+export const FOTO_MIMES = ["image/jpeg", "image/png"] as const;
 export const FOTO_MAX_BYTES = 5 * 1024 * 1024;
 
 export function urlFoto(id: string, version: number): string {

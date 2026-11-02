@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserRound } from "lucide-react";
+import Link from "next/link";
+import { FileText, UserRound } from "lucide-react";
 import type { EquipoDto, MiembroDto } from "@/lib/asesores";
 
 /**
@@ -74,6 +75,12 @@ export function AsesorCard({ contactId, refreshKey = 0 }: { contactId: string; r
         <p className="text-sm">{asesor ? asesor.nombre : "Sin asesor asignado"}</p>
       )}
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      <Link
+        href={`/cotizaciones?contacto=${contactId}`}
+        className="mt-3 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border text-sm font-medium hover:bg-accent"
+      >
+        <FileText className="h-4 w-4" /> Nueva cotización
+      </Link>
     </section>
   );
 }

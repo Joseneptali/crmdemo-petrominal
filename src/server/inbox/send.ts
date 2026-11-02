@@ -38,6 +38,7 @@ import {
   type ZernioWhatsappCredentials,
 } from "@/server/zernio-whatsapp/credentials";
 import { sendZernioMessage } from "@/server/zernio";
+import { enlacePublico } from "@/server/enlace-publico";
 import { prepararAudioSaliente } from "@/server/whatsapp/nota-de-voz";
 import {
   cabeOtroMensaje,
@@ -584,7 +585,6 @@ export async function sendMediaMessage(input: {
   const kind = validateOutgoing(file.mimeType, file.data.byteLength);
 
   const target = await prepareSend(input.conversationId, input.organizationId);
-  soloTextoPorZernio(target);
   const { credentials } = target;
   const sendCaps = capabilitiesFor(target.conversation.channel);
   if (!sendCaps.outboundMedia) {
@@ -618,6 +618,58 @@ export async function sendMediaMessage(input: {
     })
     .returning();
   const asset = assetRows[0]!;
+
+  // Petrominal — por Zernio el archivo viaja por un enlace público firmado.
+  if (target.zernioWa) {
+    const zw = target.zernioWa;
+    try {
+      const url = enlacePublico(`/api/public/media/${assetId}`, `media:${assetId}`, 30);
+      const tipo =
+        kind === "image" ? "image" : kind === "video" ? "video" : kind === "audio" ? "audio" : "file";
+      const res = await sendZernioMessage({
+        token: zw.token,
+        accountId: zw.accountRef,
+        conversationId: target.conversation.channelThreadRef,
+        text: input.caption ?? "",
+        attachment: { url, type: tipo, name: file.fileName },
+      });
+      const messageId = await persistOutbound({
+        organizationId: input.organizationId,
+        conversationId: input.conversationId,
+        waMessageId: res.platformMessageId,
+        type: kind,
+        text: null,
+        status: "sent",
+        origin: "operator",
+        mediaAssetId: assetId,
+        media: asset,
+        cita,
+      });
+      return { messageId };
+    } catch (err) {
+      const sendErr =
+        err instanceof MetaApiError && err.isAuthError
+          ? new SendError("reconnect_required", "La llave de Zernio expiró: reconecta WhatsApp por Zernio")
+          : new SendError("upload_failed", "Zernio no pudo enviar el adjunto");
+      if (err instanceof MetaApiError && err.isAuthError) {
+        await markZernioWhatsappReconnectRequired(input.organizationId);
+      }
+      sendErr.messageId = await persistOutbound({
+        organizationId: input.organizationId,
+        conversationId: input.conversationId,
+        waMessageId: null,
+        type: kind,
+        text: null,
+        status: "failed",
+        error: sendErr.message,
+        origin: "operator",
+        mediaAssetId: assetId,
+        media: asset,
+        cita,
+      });
+      throw sendErr;
+    }
+  }
 
   try {
     const waMediaId = await uploadGraphMedia(credentials!, file);
@@ -990,12 +1042,3 @@ async function callZernioWhatsappSend(target: SendTarget, text: string): Promise
   }
 }
 
-/** Petrominal — lo que Zernio aún no envía desde el CRM (adjuntos, plantillas). */
-function soloTextoPorZernio(target: SendTarget): void {
-  if (target.zernioWa) {
-    throw new SendError(
-      "meta_error",
-      "Con WhatsApp por Zernio, por ahora desde el CRM solo se envía texto"
-    );
-  }
-}

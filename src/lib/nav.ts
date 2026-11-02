@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  FileText,
   ChartColumn,
   FlaskConical,
   Inbox,
@@ -63,6 +64,7 @@ export function appNavGroups({
     { href: "/contacts", label: "Contactos", icon: Users },
     // Petrominal — el catálogo del cotizador.
     { href: "/catalogo", label: "Catálogo", icon: Package },
+    { href: "/cotizaciones", label: "Cotizaciones", icon: FileText },
   ];
   // Citas va después de Contactos: es el paso siguiente de un trato, no una
   // sección aparte.

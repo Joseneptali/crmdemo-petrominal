@@ -252,9 +252,6 @@ function mimeReal(buf: Buffer): (typeof FOTO_MIMES)[number] | null {
   if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
     return "image/png";
   }
-  if (buf.length > 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") {
-    return "image/webp";
-  }
   return null;
 }
 
@@ -268,7 +265,7 @@ export async function guardarFoto(
     throw new CatalogoError(413, "muy_grande", "La imagen pesa más de 5 MB");
   }
   const mime = mimeReal(datos);
-  if (!mime) throw new CatalogoError(415, "tipo", "Solo se aceptan fotos JPG, PNG o WebP");
+  if (!mime) throw new CatalogoError(415, "tipo", "Solo se aceptan fotos JPG o PNG");
   const actual = await obtenerProducto(organizationId, id);
   if (!actual) throw new CatalogoError(404, "not_found", "Producto no encontrado");
 

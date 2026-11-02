@@ -225,7 +225,7 @@ export function CatalogoClient({ puedeImportar }: { puedeImportar: boolean }) {
           <input
             ref={archivo}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png"
             className="hidden"
             onChange={(e) => void subirFoto(e.target.files?.[0])}
           />

@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -1509,4 +1510,97 @@ export const petrominalAjustes = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("petrominal_ajustes_org_uq").on(t.organizationId)]
+);
+
+/* ============================================================
+ * Petrominal — Cotizaciones y correo de cada asesor
+ * ============================================================ */
+
+/**
+ * Una cotización a un cliente. El número es consecutivo por organización. Los
+ * montos van en CENTAVOS ENTEROS (bigint: una cotización en pesos supera el
+ * tope de un entero de 32 bits). Los renglones guardan copia de la referencia
+ * y la descripción: cambiar el catálogo no reescribe una cotización enviada.
+ */
+export const cotizacion = pgTable(
+  "cotizacion",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    numero: integer("numero").notNull(),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    asesorUserId: text("asesor_user_id").references(() => user.id, { onDelete: "set null" }),
+    estado: text("estado", { enum: ["borrador", "enviada"] }).notNull().default("borrador"),
+    moneda: text("moneda").notNull().default("COP"),
+    ivaPorcentaje: integer("iva_porcentaje").notNull().default(19),
+    validezDias: integer("validez_dias").notNull().default(15),
+    condiciones: text("condiciones"),
+    notas: text("notas"),
+    subtotalCents: bigint("subtotal_cents", { mode: "number" }).notNull().default(0),
+    totalCents: bigint("total_cents", { mode: "number" }).notNull().default(0),
+    /** Por dónde salió: `{ whatsapp?: fecha, correo?: { a, fecha } }`. */
+    envios: jsonb("envios").$type<Record<string, unknown>>(),
+    enviadaAt: timestamp("enviada_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("cotizacion_org_numero_uq").on(t.organizationId, t.numero),
+    index("cotizacion_org_contacto_idx").on(t.organizationId, t.contactId),
+  ]
+);
+
+export const cotizacionItem = pgTable(
+  "cotizacion_item",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    cotizacionId: text("cotizacion_id")
+      .notNull()
+      .references(() => cotizacion.id, { onDelete: "cascade" }),
+    productoId: text("producto_id").references(() => producto.id, { onDelete: "set null" }),
+    posicion: integer("posicion").notNull().default(0),
+    referencia: text("referencia").notNull(),
+    descripcion: text("descripcion").notNull(),
+    unidad: text("unidad").notNull().default("UND"),
+    /** Milésimas: 2,5 metros = 2500. */
+    cantidadMilesimas: integer("cantidad_milesimas").notNull().default(1000),
+    precioUnitarioCents: bigint("precio_unitario_cents", { mode: "number" }).notNull().default(0),
+  },
+  (t) => [index("cotizacion_item_cot_idx").on(t.organizationId, t.cotizacionId)]
+);
+
+/**
+ * El correo corporativo de cada asesor (SMTP: Yahoo Small Business u otro).
+ * La contraseña de aplicación va cifrada como cualquier secreto del negocio.
+ */
+export const asesorCorreo = pgTable(
+  "asesor_correo",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    host: text("host").notNull(),
+    puerto: integer("puerto").notNull().default(465),
+    seguro: boolean("seguro").notNull().default(true),
+    usuario: text("usuario").notNull(),
+    nombreRemitente: text("nombre_remitente"),
+    firma: text("firma"),
+    claveCipher: text("clave_cipher").notNull(),
+    claveIv: text("clave_iv").notNull(),
+    claveTag: text("clave_tag").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("asesor_correo_org_user_uq").on(t.organizationId, t.userId)]
 );
