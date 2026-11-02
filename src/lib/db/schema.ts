@@ -1443,3 +1443,44 @@ export const producto = pgTable(
     index("producto_org_linea_idx").on(t.organizationId, t.linea),
   ]
 );
+
+/* ============================================================
+ * Petrominal — WhatsApp por Zernio (sin ser Tech Provider)
+ * ============================================================ */
+
+/**
+ * El número de WhatsApp conectado a través de Zernio en lugar de la Cloud API
+ * directa. Mismo contrato que `tiktok_credentials`: la llave y el secreto del
+ * webhook cifrados; el webhook enruta por `account_ref`. Si la organización
+ * tiene además `meta_credentials`, manda la conexión directa con Meta.
+ */
+export const zernioWhatsappCredentials = pgTable(
+  "zernio_whatsapp_credentials",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** `accountId` de la cuenta de WhatsApp en Zernio. */
+    accountRef: text("account_ref").notNull(),
+    /** El número o nombre visible, solo para enseñarlo en Ajustes. */
+    displayName: text("display_name"),
+    tokenCipher: text("token_cipher").notNull(),
+    tokenIv: text("token_iv").notNull(),
+    tokenTag: text("token_tag").notNull(),
+    /** Sin uso (columnas compartidas con `secreto-guardado`): siempre nulo. */
+    webhookSecret: text("webhook_secret"),
+    webhookSecretCipher: text("webhook_secret_cipher"),
+    webhookSecretIv: text("webhook_secret_iv"),
+    webhookSecretTag: text("webhook_secret_tag"),
+    status: text("status", { enum: ["connected", "reconnect_required"] })
+      .notNull()
+      .default("connected"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("zernio_whatsapp_credentials_org_uq").on(t.organizationId),
+    uniqueIndex("zernio_whatsapp_credentials_account_ref_uq").on(t.accountRef),
+  ]
+);

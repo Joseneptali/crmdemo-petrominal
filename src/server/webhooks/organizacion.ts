@@ -9,6 +9,8 @@ import { normalizeMetaPagePayload } from "@/server/messenger/ingest";
 import { zernioTargetChannel } from "@/server/zernio/dispatch";
 import { findZernioConnection } from "@/server/zernio/conexiones";
 import type { ZernioEvent } from "@/server/zernio";
+import { getZernioWhatsappByAccountRef } from "@/server/zernio-whatsapp/credentials";
+import { esEventoWhatsapp } from "@/server/zernio-whatsapp/ingest";
 import type { FuenteWebhook } from "./eventos";
 
 /**
@@ -35,6 +37,12 @@ const buscadoresReales: Buscadores = {
   porIgUserId: getInstagramCredentialsByIgUserId,
   porPageId: getMessengerCredentialsByPageId,
   porCuentaZernio: async (evt) => {
+    // Petrominal — WhatsApp por Zernio enruta por su propia conexión.
+    if (esEventoWhatsapp(evt)) {
+      const ref = evt.account?.id ?? evt.account?.accountId;
+      const zw = ref ? await getZernioWhatsappByAccountRef(ref) : null;
+      return zw ? { organizationId: zw.organizationId } : null;
+    }
     const canal = zernioTargetChannel(evt);
     if (!canal) return null;
     const found = await findZernioConnection(canal, evt.account);

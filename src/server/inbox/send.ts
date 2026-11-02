@@ -32,6 +32,12 @@ import {
   type TiktokCredentials,
 } from "@/server/tiktok/credentials";
 import { sendTiktokText } from "@/server/tiktok/send";
+import {
+  getZernioWhatsappByOrg,
+  markZernioWhatsappReconnectRequired,
+  type ZernioWhatsappCredentials,
+} from "@/server/zernio-whatsapp/credentials";
+import { sendZernioMessage } from "@/server/zernio";
 import { prepararAudioSaliente } from "@/server/whatsapp/nota-de-voz";
 import {
   cabeOtroMensaje,
@@ -97,6 +103,8 @@ type SendTarget = {
   messenger?: MessengerCredentials;
   /** 022: presente solo en conversaciones de TikTok. */
   tiktok?: TiktokCredentials;
+  /** Petrominal: WhatsApp conectado por Zernio en vez de la Cloud API. */
+  zernioWa?: ZernioWhatsappCredentials;
   /**
    * 024: el envío sale con la etiqueta de agente humano. Lo decide el
    * pre-vuelo (`assertReplyWindow`), no cada canal por su cuenta.
@@ -311,7 +319,25 @@ async function prepareSend(
 
   const credentials = await getCredentialsByOrg(organizationId);
   if (!credentials) {
-    throw new SendError("not_connected", "No hay número de WhatsApp conectado");
+    // Petrominal — sin número directo de Meta, WhatsApp puede ir por Zernio.
+    const zw = await getZernioWhatsappByOrg(organizationId);
+    if (!zw) {
+      throw new SendError("not_connected", "No hay número de WhatsApp conectado");
+    }
+    if (zw.status === "reconnect_required") {
+      throw new SendError(
+        "reconnect_required",
+        "La llave de Zernio dejó de servir: reconecta WhatsApp por Zernio en Ajustes"
+      );
+    }
+    const zwRecipient = row.contact.phone ?? row.contact.waIdentity;
+    return {
+      conversation: row.conversation,
+      credentials: null,
+      destinatario: { to: zwRecipient },
+      recipient: zwRecipient,
+      zernioWa: zw,
+    };
   }
   if (credentials.status === "reconnect_required") {
     throw new SendError(
@@ -496,7 +522,9 @@ export async function sendText(input: {
       ? await callMessengerSend(target, text)
       : target.tiktok
         ? await callTiktokSend(target, text)
-        : await callGraphSend(
+        : target.zernioWa
+          ? await callZernioWhatsappSend(target, text)
+          : await callGraphSend(
           credentials!,
           conCita(
             {
@@ -554,6 +582,7 @@ export async function sendMediaMessage(input: {
   const kind = validateOutgoing(file.mimeType, file.data.byteLength);
 
   const target = await prepareSend(input.conversationId, input.organizationId);
+  soloTextoPorZernio(target);
   const { credentials } = target;
   const sendCaps = capabilitiesFor(target.conversation.channel);
   if (!sendCaps.outboundMedia) {
@@ -923,5 +952,48 @@ async function callTiktokSend(target: SendTarget, text: string): Promise<string>
       throw new SendError("meta_error", err.message);
     }
     throw err;
+  }
+}
+
+/**
+ * Petrominal — WhatsApp por Zernio. Responde dentro de la conversación de
+ * Zernio (`channelThreadRef`, que guarda la ingesta). Mismo vocabulario de
+ * errores que la Cloud API.
+ */
+async function callZernioWhatsappSend(target: SendTarget, text: string): Promise<string> {
+  const creds = target.zernioWa!;
+  try {
+    const res = await sendZernioMessage({
+      token: creds.token,
+      accountId: creds.accountRef,
+      conversationId: target.conversation.channelThreadRef,
+      text,
+    });
+    return res.platformMessageId;
+  } catch (err) {
+    if (err instanceof MetaApiError) {
+      if (err.isAuthError) {
+        await markZernioWhatsappReconnectRequired(creds.organizationId);
+        throw new SendError(
+          "reconnect_required",
+          "La llave de Zernio expiró o fue revocada: reconecta WhatsApp por Zernio"
+        );
+      }
+      if (err.status === 0 || err.status >= 500) {
+        throw new SendError("meta_unavailable", "Zernio no está disponible ahora; intenta de nuevo");
+      }
+      throw new SendError("meta_error", err.message);
+    }
+    throw err;
+  }
+}
+
+/** Petrominal — lo que Zernio aún no envía desde el CRM (adjuntos, plantillas). */
+function soloTextoPorZernio(target: SendTarget): void {
+  if (target.zernioWa) {
+    throw new SendError(
+      "meta_error",
+      "Con WhatsApp por Zernio, por ahora desde el CRM solo se envía texto"
+    );
   }
 }

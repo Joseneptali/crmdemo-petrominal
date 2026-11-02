@@ -4,6 +4,11 @@ import { processZernioMessengerEvent } from "@/server/messenger/ingest";
 import { processZernioTiktokEvent, zernioPlatform } from "@/server/tiktok/ingest";
 import { webhookVerifyToken } from "@/server/whatsapp/webhook-url";
 import {
+  esEntregaWhatsappAutentica,
+  esEventoWhatsapp,
+  processZernioWhatsappEvent,
+} from "@/server/zernio-whatsapp/ingest";
+import {
   isValidZernioSignatureAny,
   parseZernioEvent,
   type ZernioEvent,
@@ -67,6 +72,8 @@ export async function isAuthenticZernioDelivery(
   signature: string | null
 ): Promise<boolean> {
   const evt = parseZernioEvent(rawBody);
+  // Petrominal — WhatsApp por Zernio verifica contra su propia conexión.
+  if (evt && esEventoWhatsapp(evt)) return esEntregaWhatsappAutentica(rawBody, signature, evt);
   const channel = zernioTargetChannel(evt);
   if (!evt || !channel) return true;
   const found = await findZernioConnection(channel, evt.account);
@@ -92,6 +99,11 @@ export async function isAuthenticZernioDelivery(
  * con aviso: la instancia no lo tiene, y su superficie no existe (ADR-001).
  */
 export async function processZernioPayload(payload: unknown): Promise<void> {
+  // Petrominal — WhatsApp por Zernio: siempre encendido (es el canal base).
+  if (esEventoWhatsapp(payload)) {
+    await processZernioWhatsappEvent(payload);
+    return;
+  }
   const channel = zernioTargetChannel(payload);
   if (!channel) return; // otra plataforma conectada a la misma llave: no es nuestra
 
