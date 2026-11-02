@@ -43,6 +43,20 @@ export function deFicha(ficha: unknown, claves: string[]): string | null {
     if (typeof v === "string" && v.trim()) return v.trim();
     if (typeof v === "number") return String(v);
   }
+  // El correo se rescata aunque la IA lo haya dejado dentro de otra clave (p. ej. «notas»).
+  if (claves === CLAVES.correo) return correoEnTexto(Object.values(f));
+  return null;
+}
+
+const RE_CORREO = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
+
+/** Primer correo electrónico que aparezca en los valores de texto. */
+export function correoEnTexto(valores: unknown[]): string | null {
+  for (const v of valores) {
+    if (typeof v !== "string") continue;
+    const m = RE_CORREO.exec(v);
+    if (m) return m[0].toLowerCase();
+  }
   return null;
 }
 

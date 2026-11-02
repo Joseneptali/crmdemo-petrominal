@@ -110,6 +110,14 @@ export async function upsertFicha(input: {
   if (!rows[0]) return null;
 
   const merged = mergeFicha(rows[0].ficha as Ficha | null, patch);
+  // Petrominal — si la IA escribió el correo dentro de otro campo, se copia a
+  // «correo» para que cotizaciones y reuniones lo encuentren. Un `null`
+  // explícito a «correo» se respeta (alguien lo borró a propósito).
+  if (!("correo" in merged) && !("correo" in patch)) {
+    const { correoEnTexto } = await import("@/server/cotizaciones");
+    const correo = correoEnTexto(Object.values(patch));
+    if (correo) merged.correo = correo;
+  }
 
   await db
     .update(schema.contact)

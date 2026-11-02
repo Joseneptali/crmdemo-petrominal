@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aCentavos, aMilesimas, numeroCotizacion, totales, totalRenglonCents } from "@/lib/cotizaciones";
-import { bloqueosDeEnvio, deFicha } from "@/server/cotizaciones";
+import { bloqueosDeEnvio, CLAVES, correoEnTexto, deFicha } from "@/server/cotizaciones";
 import type { CotizacionDto } from "@/lib/cotizaciones";
 
 describe("cotizador Petrominal", () => {
@@ -38,5 +38,20 @@ describe("cotizador Petrominal", () => {
       bloqueosDeEnvio({ ...base, items: [{ ...item, precioUnitario: 10 }], faltanFotos: ["11-3-60"] } as unknown as CotizacionDto)
     ).toMatch(/faltan fotos/);
     expect(bloqueosDeEnvio({ ...base, items: [{ ...item, precioUnitario: 10 }] } as unknown as CotizacionDto)).toBeNull();
+  });
+});
+
+describe("correo del cliente en la ficha", () => {
+  it("usa la clave «correo» cuando existe", () => {
+    expect(deFicha({ correo: "a@b.co", notas: "x c@d.co" }, CLAVES.correo)).toBe("a@b.co");
+  });
+  it("rescata el correo escrito dentro de las notas", () => {
+    expect(
+      deFicha({ notas: "Contacto: Jose, correo Ing.Jose@Gmail.com. Pidió asesor." }, CLAVES.correo)
+    ).toBe("ing.jose@gmail.com");
+  });
+  it("sin correo en ninguna parte devuelve null", () => {
+    expect(deFicha({ notas: "sin datos" }, CLAVES.correo)).toBeNull();
+    expect(correoEnTexto([1, null, "nada"])).toBeNull();
   });
 });

@@ -8,6 +8,10 @@ import { resolveAiProvider } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
 
+const INSTRUCCION_FICHA = `
+
+Datos del cliente: a un cliente nuevo pídele, con naturalidad y sin interrogarlo, su nombre, empresa, NIT, cargo, ciudad y correo electrónico, y lo que necesita. Guarda cada dato en la ficha del CRM en cuanto lo sepas, usando EXACTAMENTE estas claves (en minúscula, sin tildes): nombre, empresa, nit, cargo, ciudad, correo, telefono, producto, aplicacion, capacidad, cantidad, notas. Un dato por clave; el correo va solo en «correo», nunca dentro de «notas». En «notas» va únicamente lo que no encaje en las demás.`;
+
 /**
  * Perfil del agente + knowledge base para un cerebro externo.
  * GET /api/bot/profile → {profile, kb, resources}. Sin caché: cada consulta
@@ -62,5 +66,12 @@ export async function GET(req: Request) {
         }
       : profile;
 
-  return Response.json(serializeBotProfile(conHorario, kb, llm));
+  // Petrominal — la ficha del cliente con claves fijas: así la cotización y
+  // las reuniones encuentran el correo, la empresa, el NIT y la ciudad.
+  const conFicha = {
+    ...conHorario,
+    instructions: (conHorario.instructions ?? "") + INSTRUCCION_FICHA,
+  };
+
+  return Response.json(serializeBotProfile(conFicha, kb, llm));
 }
