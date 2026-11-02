@@ -1,0 +1,151 @@
+# Demo Petrominal — compila, prueba y publica la imagen de la rama `petrominal`.
+#
+# 1. Genera las migraciones de Drizzle que falten (`pnpm db:generate`) y, si
+#    salen archivos nuevos, los sube a la rama.
+# 2. typecheck · lint · test · build. Cada resultado queda en la rama
+#    `ci-reportes` (reporte.md + logs) para leerlo con git, sin la UI.
+# 3. Si typecheck y build pasan, publica ghcr.io/<repo>:petrominal y :sha-<corto>.
+name: Petrominal
+
+on:
+  push:
+    branches: [petrominal]
+  workflow_dispatch:
+
+concurrency:
+  group: petrominal
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    env:
+      CHANNELS: "whatsapp,instagram,messenger,tiktok"
+      AGENDA: "on"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
+
+      - name: migraciones
+        id: mig
+        run: |
+          set -o pipefail
+          pnpm db:generate 2>&1 | tee /tmp/db-generate.log
+          if [ -n "$(git status --porcelain drizzle)" ]; then
+            git config user.name "petrominal-ci"
+            git config user.email "ci@users.noreply.github.com"
+            git add drizzle
+            git commit -m "chore(db): migración generada por CI [skip ci]"
+            git push origin HEAD:petrominal
+            echo "nuevas=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "nuevas=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: typecheck
+        id: tc
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee /tmp/typecheck.log
+
+      - name: lint
+        id: lint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm lint 2>&1 | tee /tmp/lint.log
+
+      - name: test
+        id: test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tail -400 | tee /tmp/test.log
+
+      - name: build
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tail -300 | tee /tmp/build.log
+
+      - name: reporte
+        if: always()
+        run: |
+          sha="$(git rev-parse --short HEAD)"
+          dir="$(mktemp -d)"
+          cp /tmp/*.log "$dir"/ 2>/dev/null || true
+          {
+            echo "# CI petrominal · $sha · $(date -u +%FT%TZ)"
+            echo
+            echo "| paso | resultado |"
+            echo "|---|---|"
+            echo "| migraciones nuevas | ${{ steps.mig.outputs.nuevas }} |"
+            echo "| typecheck | ${{ steps.tc.outcome }} |"
+            echo "| lint | ${{ steps.lint.outcome }} |"
+            echo "| test | ${{ steps.test.outcome }} |"
+            echo "| build | ${{ steps.build.outcome }} |"
+          } > "$dir/reporte.md"
+          git config user.name "petrominal-ci"
+          git config user.email "ci@users.noreply.github.com"
+          cd "$dir"
+          git init -q -b ci-reportes
+          git add -A
+          git commit -qm "reporte $sha"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" ci-reportes
+
+      - name: ¿publicar?
+        id: ok
+        run: |
+          if [ "${{ steps.tc.outcome }}" = "success" ] && [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo "publicar=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "publicar=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.ok.outputs.publicar == 'si'
+
+      - uses: docker/login-action@v3
+        if: steps.ok.outputs.publicar == 'si'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: nombre de la imagen
+        if: steps.ok.outputs.publicar == 'si'
+        id: img
+        run: |
+          echo "nombre=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "corto=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        if: steps.ok.outputs.publicar == 'si'
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.img.outputs.nombre }}:petrominal
+            ${{ steps.img.outputs.nombre }}:sha-${{ steps.img.outputs.corto }}
+          build-args: |
+            SOURCE_COMMIT=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
