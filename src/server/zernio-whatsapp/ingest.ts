@@ -1,7 +1,9 @@
 import { normalizeMx } from "@/lib/meta/client";
 import { ingestInboundMessage } from "@/server/inbox/ingest";
+import { applyStatusUpdate } from "@/server/inbox/status";
 import type { ResolvedIdentity } from "@/server/inbox/identity";
 import {
+  zernioFetch,
   isValidZernioSignature,
   isValidZernioSignatureAny,
   zernioSentAtSeconds,
@@ -106,6 +108,7 @@ export function normalizeZernioWhatsappEvent(payload: unknown): ZernioWhatsappIn
 }
 
 export async function processZernioWhatsappEvent(payload: unknown): Promise<void> {
+  if (await procesarAcuse(payload)) return;
   const mensajes = normalizeZernioWhatsappEvent(payload);
   if (mensajes.length === 0) {
     const e = payload as ZernioEvent;
@@ -171,4 +174,60 @@ export async function esEntregaWhatsappAutentica(
   const frescos = await webhookSecretsFromZernio(creds.token, segmento, WEBHOOKS_RECHECK_MS);
   if (!creds.webhookSecret && frescos.length === 0) return true;
   return frescos.length > 0 && isValidZernioSignatureAny(rawBody, signature, frescos);
+}
+
+/** Acuses de Zernio → estado del mensaje saliente (monotónico, como Meta). */
+const ACUSES: Record<string, string> = {
+  "message.delivered": "delivered",
+  "message.read": "read",
+  "message.failed": "failed",
+};
+
+/** Procesa un acuse de entrega o lectura. `true` si el evento era uno. */
+export async function procesarAcuse(payload: unknown): Promise<boolean> {
+  const evt = payload as (ZernioEvent & {
+    error?: { code?: number; title?: string; message?: string } | null;
+  }) | null;
+  const estado = evt?.event ? ACUSES[evt.event] : undefined;
+  if (!evt || !estado) return false;
+  const accountRef = evt.account?.id ?? evt.account?.accountId;
+  const creds = accountRef ? await getZernioWhatsappByAccountRef(accountRef) : null;
+  if (!creds) return true;
+  // El envío guardó el id de Zernio; por si acaso, también el de la plataforma.
+  const ids = [evt.message?.id, evt.message?.platformMessageId].filter(
+    (x): x is string => typeof x === "string" && x.length > 0
+  );
+  for (const id of ids) {
+    await applyStatusUpdate(creds.organizationId, {
+      id,
+      status: estado,
+      timestamp: String(Math.floor(Date.now() / 1000)),
+      ...(estado === "failed" && evt.error
+        ? { errors: [{ code: evt.error.code ?? 0, title: evt.error.title, message: evt.error.message }] }
+        : {}),
+    });
+  }
+  return true;
+}
+
+/**
+ * Marca como leído el último mensaje del cliente. Zernio no tiene un «marcar
+ * leído» aparte: su indicador de «escribiendo…» de WhatsApp lo hace como efecto
+ * (y el indicador se apaga solo, o al llegar la respuesta). Best-effort: un
+ * fallo aquí jamás afecta al CRM.
+ */
+export async function marcarLeidoPorZernio(
+  creds: { token: string; accountRef: string },
+  threadRef: string
+): Promise<void> {
+  try {
+    await zernioFetch(`/inbox/conversations/${encodeURIComponent(threadRef)}/typing`, {
+      method: "POST",
+      token: creds.token,
+      body: { accountId: creds.accountRef },
+      timeoutMs: 5000,
+    });
+  } catch (err) {
+    console.warn("[zernio-wa] no se pudo marcar como leído:", err instanceof Error ? err.message : String(err));
+  }
 }

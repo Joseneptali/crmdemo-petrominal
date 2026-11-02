@@ -546,7 +546,9 @@ export async function sendText(input: {
     // Un canal sin acuses de entrega confirma al aceptar; uno con acuses
     // avanza despues por webhook. Sin esta distincion el mensaje se queda
     // con el reloj puesto para siempre.
-    status: capabilitiesFor(target.conversation.channel).deliveryReceipts
+    // Petrominal: por Zernio, aceptado = enviado; los acuses llegan después
+    // como `message.delivered` / `message.read` y lo suben.
+    status: !target.zernioWa && capabilitiesFor(target.conversation.channel).deliveryReceipts
       ? "pending"
       : "sent",
     aiGenerated: input.aiGenerated,

@@ -1,4 +1,8 @@
+import { after } from "next/server";
 import { z } from "zod";
+import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
+import { getZernioWhatsappByOrg } from "@/server/zernio-whatsapp/credentials";
+import { marcarLeidoPorZernio } from "@/server/zernio-whatsapp/ingest";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { canConfigure } from "@/lib/auth/roles";
 import { newId } from "@/lib/db/ids";
@@ -23,7 +27,25 @@ export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
   const body = await parseBody(req, patchSchema);
   if (!body.ok) return body.response;
 
+  // Petrominal — leer la conversación por WhatsApp-Zernio le avisa al cliente
+  // (doble check azul). Solo si había algo sin leer, para no repetirlo.
+  const antes = body.data.markRead ? await getConversation(session.organizationId, id) : null;
   const updated = await updateConversation(session.organizationId, id, body.data);
+  if (
+    antes &&
+    antes.conversation.unreadCount > 0 &&
+    antes.conversation.channel === "whatsapp" &&
+    antes.conversation.channelThreadRef &&
+    !antes.conversation.isTest
+  ) {
+    const threadRef = antes.conversation.channelThreadRef;
+    const orgId = session.organizationId;
+    after(async () => {
+      if (await getCredentialsByOrg(orgId)) return; // número directo de Meta: no aplica
+      const zw = await getZernioWhatsappByOrg(orgId);
+      if (zw && zw.status === "connected") await marcarLeidoPorZernio(zw, threadRef);
+    });
+  }
   if (!updated) return apiError(404, "not_found", "Conversación no encontrada");
 
   const row = await getConversation(session.organizationId, id);
