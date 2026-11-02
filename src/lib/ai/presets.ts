@@ -70,7 +70,9 @@ export function presetDeBaseUrl(baseUrl: string): AiProviderId {
  */
 export function apiRoot(baseUrl: string): string {
   const sinBarra = baseUrl.trim().replace(/\/+$/, "");
-  return /\/v1$/i.test(sinBarra) ? sinBarra : `${sinBarra}/v1`;
+  // Petrominal: una versión distinta de la 1 también es la raíz (Z.ai/GLM
+  // publica `https://api.z.ai/api/paas/v4`): no se le pega `/v1` encima.
+  return /\/v\d+$/i.test(sinBarra) ? sinBarra : `${sinBarra}/v1`;
 }
 
 export function chatCompletionsUrl(baseUrl: string): string {

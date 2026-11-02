@@ -54,6 +54,9 @@ describe("URLs del proveedor", () => {
     expect(apiRoot("https://openrouter.ai/api")).toBe("https://openrouter.ai/api/v1");
     expect(apiRoot("https://openrouter.ai/api/")).toBe("https://openrouter.ai/api/v1");
     expect(apiRoot("https://api.groq.com/openai/v1")).toBe("https://api.groq.com/openai/v1");
+    // Z.ai (GLM) publica su raíz en /v4.
+    expect(apiRoot("https://api.z.ai/api/paas/v4")).toBe("https://api.z.ai/api/paas/v4");
+    expect(apiRoot("https://api.z.ai/api/paas/v4/")).toBe("https://api.z.ai/api/paas/v4");
     expect(apiRoot("https://api.groq.com/openai/v1/")).toBe("https://api.groq.com/openai/v1");
     expect(chatCompletionsUrl("http://localhost:3000/api/dev/ai-mock")).toBe(
       "http://localhost:3000/api/dev/ai-mock/v1/chat/completions"
