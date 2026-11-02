@@ -204,6 +204,13 @@
       "when": 1793585851944,
       "tag": "0028_chief_skreet",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793590893110,
+      "tag": "0029_cloudy_nekra",
+      "breakpoints": true
     }
   ]
 }
