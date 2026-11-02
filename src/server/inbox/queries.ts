@@ -64,6 +64,10 @@ export async function listConversations(
     limit 1
   )`;
 
+  const asesorSql = sql<string | null>`(
+    select u.name from "user" u where u.id = ${schema.contact.asesorUserId}
+  )`;
+
   const rows = await db
     .select({
       conversation: schema.conversation,
@@ -71,6 +75,7 @@ export async function listConversations(
       preview: previewSql,
       stageName: stageSql,
       anuncio: anuncioDeLista,
+      asesorNombre: asesorSql,
     })
     .from(schema.conversation)
     .innerJoin(
@@ -89,15 +94,16 @@ export async function listConversations(
     )
     .orderBy(desc(sql`coalesce(${schema.conversation.lastMessageAt}, ${schema.conversation.createdAt})`));
 
-  return rows.map((r) =>
-    serializeConversation(
+  return rows.map((r) => ({
+    ...serializeConversation(
       r.conversation,
       r.contact,
       r.preview,
       r.stageName,
       aAnuncioDeLista(r.anuncio)
-    )
-  );
+    ),
+    asesorNombre: r.asesorNombre,
+  }));
 }
 
 export async function getConversation(

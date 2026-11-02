@@ -1,5 +1,4 @@
 import { InboxClient } from "@/components/inbox/inbox-client";
-import { canConfigure } from "@/lib/auth/roles";
 import { getSessionOrNull } from "@/lib/auth/session";
 import { CHANNEL_ORDER } from "@/lib/channels";
 import { enabledChannels } from "@/server/channels/enabled";
@@ -21,5 +20,5 @@ export default async function InboxPage() {
   // servidor lo exige en la ruta; esto solo decide si la opción se enseña.
   const session = await getSessionOrNull();
 
-  return <InboxClient channels={channels} canDelete={canConfigure(session?.role)} />;
+  return <InboxClient channels={channels} canDelete={session?.role === "owner"} />;
 }

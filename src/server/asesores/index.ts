@@ -136,6 +136,23 @@ export async function asignarAsesor(
     .where(scoped(schema.contact.organizationId, organizationId, eq(schema.contact.id, contactId)))
     .returning({ id: schema.contact.id });
   if (!fila) throw new AsesorError(404, "not_found", "Contacto no encontrado");
+  // Las bandejas abiertas recargan la lista en vivo: al asesor nuevo le
+  // aparece el chat sin recargar la página, y al anterior se le quita.
+  const convs = await getDb()
+    .update(schema.conversation)
+    .set({ updatedAt: new Date() })
+    .where(scoped(schema.conversation.organizationId, organizationId, eq(schema.conversation.contactId, contactId)))
+    .returning({ id: schema.conversation.id });
+  for (const c of convs) {
+    publish(organizationId, { type: "conversation.updated", data: { conversation: { id: c.id } } });
+  }
+  if (convs[0]) {
+    await notaDelSistema(
+      organizationId,
+      convs[0].id,
+      asesor ? `👤 Cliente asignado al asesor ${asesor.nombre}.` : "👤 Se quitó el asesor asignado a este cliente."
+    ).catch(() => {});
+  }
   return asesor;
 }
 

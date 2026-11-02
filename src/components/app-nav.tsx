@@ -19,7 +19,7 @@ import {
 import type { Branding } from "@/lib/branding";
 import type { Apariencia } from "@/lib/temas";
 import { cn, initials } from "@/lib/utils";
-import { appNavGroups, isNavActive, muestraAjustes, SETTINGS_ITEM, type NavItem } from "@/lib/nav";
+import { appNavGroups, CUENTA_ITEM, isNavActive, muestraAjustes, SETTINGS_ITEM, type NavItem } from "@/lib/nav";
 import { signOut } from "@/lib/auth/client";
 import { useEvents } from "@/components/use-events";
 import {
@@ -330,6 +330,7 @@ export function AppNav({
       <BotonInstalar className={navItemClass(false)} />
 
       {/* Ajustes va abajo, solo: no es trabajo del día. */}
+      {renderItem(CUENTA_ITEM)}
       {muestraAjustes(role) && renderItem(SETTINGS_ITEM)}
 
       <div className="mt-1 flex items-center gap-2.5 rounded-sm px-2.5 py-2 hover:bg-accent">
@@ -473,6 +474,7 @@ function Riel({
       </div>
       <div className="mt-3 flex flex-col items-center gap-2.5">
         <span className="flex h-11 w-11 items-center justify-center">{campana}</span>
+        {boton(CUENTA_ITEM)}
         {muestraAjustes(role) && boton(SETTINGS_ITEM)}
         <div ref={cuentaRef} className="relative">
           <button

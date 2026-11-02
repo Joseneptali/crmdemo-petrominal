@@ -514,6 +514,12 @@ export function ConversationList({
                             {c.stageName}
                           </span>
                         )}
+                        {/* Petrominal — a qué asesor está asignado el cliente. */}
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${c.asesorNombre ? "border-border-strong bg-chip text-text-2" : "border-warning-soft bg-warning-tint text-warning-text"}`}
+                        >
+                          {c.asesorNombre ? `Asesor: ${c.asesorNombre}` : "Sin asesor"}
+                        </span>
                         {porVencer(c) && (
                           // 052 — Pasada la ventana, solo con plantilla: se avisa antes.
                           <span

@@ -114,8 +114,10 @@ export async function revisarHorario(
     // Un aviso por cierre: si desde el último no ha abierto, no se repite.
     const reciente =
       !!conv?.fueraHorarioAt && !huboApertura(ajustes.horario, conv.fueraHorarioAt, new Date());
+    // Ya se le avisó en este cierre (y en modo IA ya respondió la IA): lo que
+    // escriba después espera al asesor, sin gastar tokens de la IA.
+    if (reciente) return { despachar: false };
     const despachar = ajustes.modo === "ia";
-    if (reciente) return { despachar };
 
     await db
       .update(schema.conversation)
@@ -144,7 +146,7 @@ export async function revisarHorario(
       await notaDelSistema(
         organizationId,
         conversationId,
-        `🌙 Mensaje fuera de horario: se le envió el aviso de horario y la IA lo atiende y toma sus datos. Queda pendiente para ${quien} cuando esté disponible.`
+        `🌙 Mensaje fuera de horario: se le envió el aviso de horario y la IA le responde una vez. Lo que escriba después, hasta que abran, queda en la bandeja sin respuesta de la IA. Pendiente para ${quien}.`
       );
     }
     return { despachar };
@@ -158,8 +160,9 @@ export async function revisarHorario(
 export function instruccionFueraDeHorario(ajustes: AjustesHorario): string {
   return (
     `\n\nIMPORTANTE — AHORA ESTAMOS FUERA DEL HORARIO DE ATENCIÓN (${ajustes.descripcion}, hora de Colombia). ` +
-    "Atiende con normalidad: resuelve dudas del catálogo y, si el cliente es nuevo, toma sus datos. " +
-    "Si pide cotización o un asesor, dile que un asesor lo contactará en el próximo horario hábil; " +
-    "no pases la conversación a una persona ahora."
+    "Responde en UN solo mensaje: atiende su consulta y, si es un cliente nuevo, pídele en ese mismo " +
+    "mensaje nombre, empresa, ciudad, correo y lo que necesita, para que el asesor lo contacte en el " +
+    "próximo horario hábil. No volverás a responder hasta que abramos, así que no hagas preguntas de " +
+    "seguimiento ni pases la conversación a una persona ahora."
   );
 }

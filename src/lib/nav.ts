@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FlaskConical,
   Inbox,
+  KeyRound,
   Kanban,
   ListChecks,
   Package,
@@ -41,6 +42,13 @@ export type NavGroup = {
 };
 
 /** La única entrada que va abajo, separada del resto. */
+/** Petrominal — Mi cuenta (cambiar la contraseña): para todos los usuarios. */
+export const CUENTA_ITEM: NavItem = {
+  href: "/cuenta",
+  label: "Mi cuenta",
+  icon: KeyRound,
+};
+
 export const SETTINGS_ITEM: NavItem = {
   href: "/settings",
   label: "Ajustes",

@@ -462,6 +462,17 @@ export function InboxClient({
                   <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-bold leading-tight tracking-tight lg:text-[18px] lg:font-semibold">
                     {multiChannel && <ChannelBadge channel={selected.channel} />}
                     <span className="truncate">{selected.contact.name}</span>
+                    {/* Petrominal — el asesor asignado, a la vista de todos. */}
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium tracking-normal",
+                        selected.asesorNombre
+                          ? "border-border-strong bg-chip text-text-2"
+                          : "border-warning-soft bg-warning-tint text-warning-text"
+                      )}
+                    >
+                      {selected.asesorNombre ? `Asesor: ${selected.asesorNombre}` : "Sin asesor"}
+                    </span>
                   </p>
                   <p
                     className={cn(

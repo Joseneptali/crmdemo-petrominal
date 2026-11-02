@@ -8,6 +8,8 @@ export type ConversationDto = {
   channel: Channel;
   contact: { id: string; name: string; phone: string | null };
   stageName: string | null;
+  /** Petrominal — nombre del asesor asignado al cliente (null = sin asesor). */
+  asesorNombre?: string | null;
   aiEnabled: boolean;
   handoffAt: string | null;
   handoffReason: string | null;

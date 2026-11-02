@@ -4,7 +4,6 @@ import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
 import { getZernioWhatsappByOrg } from "@/server/zernio-whatsapp/credentials";
 import { marcarLeidoPorZernio } from "@/server/zernio-whatsapp/ingest";
 import { apiError, parseBody, withAuth } from "@/lib/api";
-import { canConfigure } from "@/lib/auth/roles";
 import { newId } from "@/lib/db/ids";
 import { construirEventoOlvido } from "@/server/brains/contract";
 import { avisarOlvido, type ResultadoOlvido } from "@/server/brains/deliver";
@@ -79,12 +78,9 @@ const FECHA_DE_CITA = new Intl.DateTimeFormat("es-MX", { dateStyle: "long" });
  * (propietario o administrador) y no solo operar la bandeja.
  */
 export const DELETE = withAuth(async (session, req: Request, ctx: Params) => {
-  if (!canConfigure(session.role)) {
-    return apiError(
-      403,
-      "forbidden",
-      "Solo quien administra el negocio puede eliminar conversaciones"
-    );
+  // Petrominal — eliminar es irreversible: solo el propietario.
+  if (session.role !== "owner") {
+    return apiError(403, "forbidden", "Solo el propietario puede eliminar conversaciones");
   }
   const { id } = await ctx.params;
   // Petrominal — un asesor solo abre las conversaciones de su cartera.

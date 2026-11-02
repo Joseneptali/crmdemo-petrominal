@@ -100,7 +100,7 @@ export function HorarioCard() {
           <Label>Fuera de horario</Label>
           <label className="flex items-start gap-2 text-sm">
             <input type="radio" name="modo" checked={aj.modo === "ia"} disabled={!puedeEditar} onChange={() => setAj({ ...aj, modo: "ia" })} />
-            <span><strong>La IA atiende:</strong> se envía el aviso de horario y la IA responde, toma los datos del cliente y le dice que un asesor lo contactará en horario hábil (sin transferir).</span>
+            <span><strong>La IA atiende una vez:</strong> se envía el aviso de horario y la IA responde un solo mensaje (pide los datos del cliente). Lo que el cliente escriba después espera al asesor, sin gastar tokens de la IA.</span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="radio" name="modo" checked={aj.modo === "mensaje"} disabled={!puedeEditar} onChange={() => setAj({ ...aj, modo: "mensaje" })} />
