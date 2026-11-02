@@ -3,6 +3,7 @@ import {
   CalendarDays,
   FileText,
   ChartColumn,
+  ClipboardList,
   FlaskConical,
   Inbox,
   Kanban,
@@ -86,7 +87,13 @@ export function appNavGroups({
     { title: "Trabajo", items: trabajo },
     { title: "Agente", items: agente },
     // 019 — Se mide al final: primero se atiende y se organiza.
-    { items: [{ href: "/results", label: "Resultados", icon: ChartColumn }] },
+    {
+      items: [
+        { href: "/results", label: "Resultados", icon: ChartColumn },
+        // Petrominal — informes gerenciales, solo para la administración.
+        ...(canConfigure(role) ? [{ href: "/informes", label: "Informes", icon: ClipboardList }] : []),
+      ],
+    },
   ];
 }
 
