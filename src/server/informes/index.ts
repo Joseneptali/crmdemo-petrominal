@@ -2,27 +2,14 @@ import { and, asc, count, eq, gte, lt, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { listarMiembros } from "@/server/asesores";
+import type { Informe } from "@/lib/informes";
 
 /**
  * Petrominal — informes gerenciales para la administración: estado de los
  * leads, desempeño por asesor, cotizaciones y reuniones en un periodo.
  */
 
-export type { Informe } from "@/lib/informes";
-import type { Informe } from "@/lib/informes";
-  porEtapa: { etapa: string; tipo: string; leads: number }[];
-  porAsesor: {
-    nombre: string;
-    clientes: number;
-    cotizaciones: number;
-    enviadas: number;
-    montoEnviado: number;
-    reuniones: number;
-    realizadas: number;
-  }[];
-  porDia: { dia: string; cotizaciones: number; monto: number; clientesNuevos: number }[];
-  proximasReuniones: { inicio: string; titulo: string; cliente: string; asesor: string | null }[];
-};
+export type { Informe };
 
 const dia = (d: Date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(d);
