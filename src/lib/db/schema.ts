@@ -1515,6 +1515,10 @@ export const petrominalAjustes = pgTable(
     /** `{ "1": ["08:00","17:00"], … }` con 1 = lunes … 7 = domingo; sin clave = cerrado. */
     horario: jsonb("horario").$type<Record<string, [string, string]>>(),
     mensajeFueraHorario: text("mensaje_fuera_horario"),
+    /** El nombre del asesor va arriba de cada mensaje que envía (en negrita). */
+    firmarMensajes: boolean("firmar_mensajes").notNull().default(true),
+    /** Al asignar o transferir, se le presenta al cliente su asesor por WhatsApp. */
+    presentarAsesor: boolean("presentar_asesor").notNull().default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

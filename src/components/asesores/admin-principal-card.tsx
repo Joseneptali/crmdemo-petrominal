@@ -11,6 +11,25 @@ import type { EquipoDto } from "@/lib/asesores";
 export function AdminPrincipalCard() {
   const [equipo, setEquipo] = useState<EquipoDto | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [cliente, setCliente] = useState<{ firmarMensajes: boolean; presentarAsesor: boolean } | null>(null);
+
+  useEffect(() => {
+    void fetch("/api/ajustes-cliente")
+      .then((r) => (r.ok ? (r.json() as Promise<{ ajustes: { firmarMensajes: boolean; presentarAsesor: boolean } }>) : null))
+      .then((d) => setCliente(d?.ajustes ?? null))
+      .catch(() => null);
+  }, []);
+
+  async function cambiarCliente(patch: Partial<{ firmarMensajes: boolean; presentarAsesor: boolean }>) {
+    if (!cliente) return;
+    const nuevo = { ...cliente, ...patch };
+    setCliente(nuevo);
+    await fetch("/api/ajustes-cliente", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nuevo),
+    }).catch(() => null);
+  }
 
   useEffect(() => {
     void fetch("/api/equipo")
@@ -62,6 +81,33 @@ export function AdminPrincipalCard() {
           ))}
         </select>
         {mensaje && <span className="text-sm text-text-2">{mensaje}</span>}
+        {cliente && (
+          <div className="w-full space-y-2 border-t pt-3 text-sm">
+            <p className="font-medium">Lo que ve el cliente</p>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={cliente.presentarAsesor}
+                onChange={(e) => void cambiarCliente({ presentarAsesor: e.target.checked })}
+              />
+              <span>
+                <strong>Presentar al asesor:</strong> al asignar un asesor (o cuando la IA le pasa el chat), el
+                cliente recibe por WhatsApp «Su asesor comercial asignado es <em>nombre</em>».
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={cliente.firmarMensajes}
+                onChange={(e) => void cambiarCliente({ firmarMensajes: e.target.checked })}
+              />
+              <span>
+                <strong>Firmar los mensajes:</strong> cada mensaje que envía un asesor lleva su nombre arriba
+                en negrita, para que el cliente sepa quién le escribe.
+              </span>
+            </label>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

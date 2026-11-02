@@ -8,7 +8,7 @@ import { getConversation, listMessages } from "@/server/inbox/queries";
 import { serializeMessage } from "@/server/inbox/ingest";
 import { resolverCitas } from "@/server/inbox/quotes";
 import { SendError, sendStructured, sendText } from "@/server/inbox/send";
-import { puedeVerConversacion } from "@/server/asesores";
+import { conFirma, puedeVerConversacion } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +112,8 @@ export const POST = withAuth(async (session, req: Request, ctx: Params) => {
         ? await sendText({
             conversationId: id,
             organizationId: session.organizationId,
-            text: data.text,
+            // Petrominal — el cliente ve el nombre del asesor que le escribe.
+            text: await conFirma(session.organizationId, session.userId, data.text),
             replyToMessageId: data.replyToMessageId,
           })
         : data.type === "location"

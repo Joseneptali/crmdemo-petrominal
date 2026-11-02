@@ -130,6 +130,12 @@ export async function asignarAsesor(
   if (asesorUserId && !asesor) {
     throw new AsesorError(422, "no_miembro", "Esa persona no es del equipo");
   }
+  const [previo] = await getDb()
+    .select({ asesor: schema.contact.asesorUserId })
+    .from(schema.contact)
+    .where(scoped(schema.contact.organizationId, organizationId, eq(schema.contact.id, contactId)))
+    .limit(1);
+  const anterior = previo?.asesor ?? null;
   const [fila] = await getDb()
     .update(schema.contact)
     .set({ asesorUserId, updatedAt: new Date() })
@@ -152,6 +158,17 @@ export async function asignarAsesor(
       convs[0].id,
       asesor ? `👤 Cliente asignado al asesor ${asesor.nombre}.` : "👤 Se quitó el asesor asignado a este cliente."
     ).catch(() => {});
+    if (asesor && asesor.userId !== anterior) {
+      const [c] = await getDb()
+        .select({ nombre: schema.contact.name, isTest: schema.conversation.isTest, channel: schema.conversation.channel })
+        .from(schema.conversation)
+        .innerJoin(schema.contact, eq(schema.conversation.contactId, schema.contact.id))
+        .where(eq(schema.conversation.id, convs[0].id))
+        .limit(1);
+      if (c && !c.isTest && c.channel === "whatsapp") {
+        await presentarAsesorAlCliente(organizationId, convs[0].id, asesor.nombre, c.nombre);
+      }
+    }
   }
   return asesor;
 }
@@ -229,4 +246,74 @@ export async function contactoDeConversacion(
     )
     .limit(1);
   return fila?.contactId ?? null;
+}
+
+/* ---------- Lo que ve el cliente: firma y presentación del asesor ---------- */
+
+export type AjustesCliente = { firmarMensajes: boolean; presentarAsesor: boolean };
+
+export async function leerAjustesCliente(organizationId: string): Promise<AjustesCliente> {
+  const [aj] = await getDb()
+    .select({
+      firmar: schema.petrominalAjustes.firmarMensajes,
+      presentar: schema.petrominalAjustes.presentarAsesor,
+    })
+    .from(schema.petrominalAjustes)
+    .where(scoped(schema.petrominalAjustes.organizationId, organizationId))
+    .limit(1);
+  return { firmarMensajes: aj?.firmar ?? true, presentarAsesor: aj?.presentar ?? true };
+}
+
+export async function guardarAjustesCliente(organizationId: string, datos: AjustesCliente): Promise<void> {
+  const db = getDb();
+  const [aj] = await db
+    .select({ id: schema.petrominalAjustes.id })
+    .from(schema.petrominalAjustes)
+    .where(scoped(schema.petrominalAjustes.organizationId, organizationId))
+    .limit(1);
+  const valores = { firmarMensajes: datos.firmarMensajes, presentarAsesor: datos.presentarAsesor, updatedAt: new Date() };
+  if (aj) await db.update(schema.petrominalAjustes).set(valores).where(eq(schema.petrominalAjustes.id, aj.id));
+  else await db.insert(schema.petrominalAjustes).values({ id: newId("petrominalAjustes"), organizationId, ...valores });
+}
+
+/** El texto con la firma del asesor (`*Nombre:*` en negrita de WhatsApp). */
+export async function conFirma(organizationId: string, userId: string, texto: string): Promise<string> {
+  const { firmarMensajes } = await leerAjustesCliente(organizationId);
+  if (!firmarMensajes) return texto;
+  const [u] = await getDb()
+    .select({ nombre: schema.user.name })
+    .from(schema.user)
+    .where(eq(schema.user.id, userId))
+    .limit(1);
+  const nombre = u?.nombre?.trim();
+  return nombre ? `*${nombre}:*\n${texto}` : texto;
+}
+
+/**
+ * Le presenta al cliente su asesor por WhatsApp. Best-effort: si la ventana de
+ * 24 h está cerrada (o falla el envío), queda anotado y no se reintenta.
+ */
+export async function presentarAsesorAlCliente(
+  organizationId: string,
+  conversationId: string,
+  asesorNombre: string,
+  clienteNombre: string | null
+): Promise<void> {
+  const { presentarAsesor } = await leerAjustesCliente(organizationId);
+  if (!presentarAsesor) return;
+  const saludo = clienteNombre?.trim() ? `Hola ${clienteNombre.trim().split(/\s+/)[0]}, ` : "Hola, ";
+  const texto = `${saludo}le saluda Petrominal S.A.S. 👋 Su asesor comercial asignado es *${asesorNombre}*, quien le atenderá personalmente.`;
+  try {
+    const { sendText } = await import("@/server/inbox/send");
+    await sendText({ conversationId, organizationId, text: texto });
+  } catch (err) {
+    const e = err as { code?: string; message?: string };
+    await notaDelSistema(
+      organizationId,
+      conversationId,
+      `No se pudo presentar el asesor al cliente por WhatsApp: ${
+        e.code === "window_closed" ? "pasaron más de 24 h desde su último mensaje" : (e.message ?? "falló el envío")
+      }.`
+    ).catch(() => {});
+  }
 }

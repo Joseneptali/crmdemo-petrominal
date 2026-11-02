@@ -9,6 +9,7 @@ import {
   contactoDeConversacion,
   destinoDeTransferencia,
   notaDelSistema,
+  presentarAsesorAlCliente,
 } from "@/server/asesores";
 
 /** Petrominal — a quién quedó la conversación, para el cerebro (informativo). */
@@ -100,6 +101,15 @@ export async function POST(req: Request) {
             ? `🔔 La IA transfirió esta conversación a ${quien}, asesor asignado del cliente.`
             : `🔔 Cliente nuevo o sin asesor: la IA lo transfirió a ${quien} (administrador principal) para que le asigne un asesor.`;
         await notaDelSistema(organizationId, conv.id, texto);
+        // El cliente conoce a su asesor (si ya tiene uno asignado).
+        if (destino.porque === "asesor" && destino.miembro) {
+          const [c] = await db
+            .select({ nombre: schema.contact.name })
+            .from(schema.contact)
+            .where(eq(schema.contact.id, contactId))
+            .limit(1);
+          await presentarAsesorAlCliente(organizationId, conv.id, destino.miembro.nombre, c?.nombre ?? null);
+        }
       }
     } catch (err) {
       console.error("[petrominal] no se pudo anotar la transferencia:", err);
