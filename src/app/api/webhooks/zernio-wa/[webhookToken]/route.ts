@@ -37,8 +37,20 @@ export async function POST(req: Request, { params }: Params) {
   } catch {
     return Response.json({ received: true });
   }
+  // Diagnóstico sin datos sensibles: qué evento llegó y de qué plataforma.
+  const evt = payload as {
+    event?: string;
+    account?: { id?: string; accountId?: string; platform?: string };
+    message?: { platform?: string; direction?: string; sender?: { id?: string } };
+  } | null;
+  const resumen =
+    `evento=${evt?.event ?? "?"} plataforma=${evt?.account?.platform ?? evt?.message?.platform ?? "?"} ` +
+    `cuenta=${evt?.account?.id ?? evt?.account?.accountId ?? "?"} direccion=${evt?.message?.direction ?? "?"} ` +
+    `remitente=${evt?.message?.sender?.id ? "sí" : "no"} firma=${zernioSignatureFrom(req.headers) ? "sí" : "no"}`;
   if (!(await isAuthenticZernioDelivery(rawBody, zernioSignatureFrom(req.headers)))) {
+    console.warn(`[zernio-wa] entrega rechazada por firma inválida (401): ${resumen}`);
     return new Response(null, { status: 401 });
   }
+  console.info(`[zernio-wa] entrega recibida: ${resumen}`);
   return recibirEvento("zernio", payload, rawBody, "zernio-wa");
 }

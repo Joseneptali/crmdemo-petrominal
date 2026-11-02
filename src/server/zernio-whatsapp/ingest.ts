@@ -103,7 +103,17 @@ export function normalizeZernioWhatsappEvent(payload: unknown): ZernioWhatsappIn
 }
 
 export async function processZernioWhatsappEvent(payload: unknown): Promise<void> {
-  for (const evt of normalizeZernioWhatsappEvent(payload)) {
+  const mensajes = normalizeZernioWhatsappEvent(payload);
+  if (mensajes.length === 0) {
+    const e = payload as ZernioEvent;
+    console.warn(
+      `[zernio-wa] evento descartado: evento=${e?.event ?? "?"} direccion=${e?.message?.direction ?? "?"} ` +
+        `cuenta=${e?.account?.id ?? e?.account?.accountId ? "sí" : "no"} remitente=${e?.message?.sender?.id ? "sí" : "no"} ` +
+        `id=${e?.message?.id ? "sí" : "no"} texto=${e?.message?.text ? "sí" : "no"} adjuntos=${e?.message?.attachments?.length ?? 0} ` +
+        `claves=${Object.keys(e ?? {}).join(",")} claves_mensaje=${Object.keys(e?.message ?? {}).join(",")}`
+    );
+  }
+  for (const evt of mensajes) {
     const creds = await getZernioWhatsappByAccountRef(evt.accountRef);
     if (!creds) {
       console.warn(
