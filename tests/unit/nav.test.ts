@@ -16,13 +16,21 @@ const labels = (groups: { items: { label: string }[] }[]) =>
   groups.map((g) => g.items.map((i) => i.label));
 
 describe("barra lateral agrupada", () => {
-  it("con todo apagado y como miembro: Trabajo, Agente y Resultados", () => {
+  it("Petrominal: un asesor (miembro) ve su trabajo y sus ventas, sin agente ni resultados", () => {
     const groups = appNavGroups({ role: "member" });
-    expect(groups.map((g) => g.title)).toEqual(["Trabajo", "Agente", undefined]);
+    expect(groups.map((g) => g.title)).toEqual(["Trabajo", undefined]);
     expect(labels(groups)).toEqual([
       ["Bandeja", "Pipeline", "Contactos", "Catálogo", "Cotizaciones", "Reuniones"],
-      ["Agente", "Laboratorio"],
-      ["Resultados"],
+      ["Mis ventas"],
+    ]);
+  });
+
+  it("Petrominal: la administración ve agente, resultados e informes", () => {
+    const groups = appNavGroups({ role: "admin" });
+    expect(groups.map((g) => g.title)).toEqual(["Trabajo", "Agente", undefined]);
+    expect(labels(groups).slice(1)).toEqual([
+      ["Guía de inicio", "Agente", "Laboratorio"],
+      ["Resultados", "Informes"],
     ]);
   });
 

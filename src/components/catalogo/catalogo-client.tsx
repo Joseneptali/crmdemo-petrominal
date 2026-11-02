@@ -26,6 +26,7 @@ export function CatalogoClient({ puedeImportar }: { puedeImportar: boolean }) {
   const [linea, setLinea] = useState("");
   const [foto, setFoto] = useState<"todas" | "con" | "sin">("todas");
   const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(25);
   const [datos, setDatos] = useState<Respuesta | null>(null);
   const [resumen, setResumen] = useState<ResumenCatalogo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export function CatalogoClient({ puedeImportar }: { puedeImportar: boolean }) {
   const destinoFoto = useRef<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const p = new URLSearchParams({ pagina: String(pagina), foto, resumen: "1" });
+    const p = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), foto, resumen: "1" });
     if (q.trim()) p.set("q", q.trim());
     if (linea) p.set("linea", linea);
     const res = await fetch(`/api/catalogo?${p.toString()}`).catch(() => null);
@@ -49,7 +50,7 @@ export function CatalogoClient({ puedeImportar }: { puedeImportar: boolean }) {
     setDatos(d);
     if (d.resumen) setResumen(d.resumen);
     setError(null);
-  }, [pagina, foto, q, linea]);
+  }, [pagina, porPagina, foto, q, linea]);
 
   useEffect(() => {
     const t = setTimeout(() => void cargar(), 250);
@@ -236,8 +237,11 @@ export function CatalogoClient({ puedeImportar }: { puedeImportar: boolean }) {
             <p className="text-sm text-text-2">No hay productos con esos filtros.</p>
           ) : (
             <ul className="divide-y rounded-md border">
-              {datos.productos.map((p) => (
+              {datos.productos.map((p, i) => (
                 <li key={p.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className="w-10 shrink-0 text-right font-mono text-xs text-text-3">
+                    {(datos.pagina - 1) * datos.porPagina + i + 1}
+                  </span>
                   <button
                     type="button"
                     onClick={() => elegirFoto(p.id)}
@@ -271,10 +275,27 @@ export function CatalogoClient({ puedeImportar }: { puedeImportar: boolean }) {
             </ul>
           )}
 
-          {datos && datos.total > datos.porPagina && (
-            <div className="flex items-center justify-between text-sm text-text-2">
-              <span>
-                {datos.total.toLocaleString("es-CO")} resultados · página {pagina} de {totalPaginas}
+          {datos && (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-text-2">
+              <span className="flex items-center gap-2">
+                Mostrando {datos.total === 0 ? 0 : (datos.pagina - 1) * datos.porPagina + 1}–
+                {Math.min(datos.pagina * datos.porPagina, datos.total)} de {datos.total.toLocaleString("es-CO")}
+                <select
+                  className="h-8 rounded-md border bg-background px-2 text-sm"
+                  value={porPagina}
+                  onChange={(e) => {
+                    setPorPagina(Number(e.target.value));
+                    setPagina(1);
+                  }}
+                  aria-label="Filas por página"
+                >
+                  {[10, 25, 50, 100].map((n) => (
+                    <option key={n} value={n}>
+                      {n} por página
+                    </option>
+                  ))}
+                </select>
+                · página {pagina} de {totalPaginas}
               </span>
               <span className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => setPagina(pagina - 1)}>

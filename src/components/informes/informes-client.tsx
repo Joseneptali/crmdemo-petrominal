@@ -175,7 +175,7 @@ function Lineas({ informe }: { informe: Informe }) {
   );
 }
 
-export function InformesClient() {
+export function InformesClient({ administracion }: { administracion: boolean }) {
   const [desde, setDesde] = useState(haceDias(29));
   const [hasta, setHasta] = useState(hoy());
   const [inf, setInf] = useState<Informe | null>(null);
@@ -202,8 +202,12 @@ export function InformesClient() {
       <style>{ESTILO}</style>
       <Card>
         <CardHeader>
-          <CardTitle>Informes gerenciales</CardTitle>
-          <CardDescription>Estado de los leads, desempeño de los asesores, cotizaciones y reuniones del periodo.</CardDescription>
+          <CardTitle>{administracion ? "Informes gerenciales" : "Mis ventas"}</CardTitle>
+          <CardDescription>
+            {administracion
+              ? "Estado de los leads, desempeño de los asesores, cotizaciones y reuniones del periodo."
+              : "Tus clientes, cotizaciones y reuniones del periodo."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="flex flex-wrap items-end gap-3">
@@ -217,7 +221,7 @@ export function InformesClient() {
             </div>
             <div className="ml-auto flex flex-wrap gap-2">
               <a href={`/api/informes/pdf?${qs}`} className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-accent">
-                <FileDown className="h-4 w-4" /> Informe PDF
+                <FileDown className="h-4 w-4" /> {administracion ? "Informe PDF" : "Mi informe PDF"}
               </a>
               {(["leads", "cotizaciones", "reuniones"] as const).map((t) => (
                 <a key={t} href={`/api/informes/csv?tipo=${t}&${qs}`} className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-accent">
@@ -238,7 +242,7 @@ export function InformesClient() {
                   ["Monto cotizado", formatoPesos(k.montoEnviado)],
                   ["Reuniones", String(k.reunionesProgramadas)],
                   ["Reuniones realizadas", String(k.reunionesRealizadas)],
-                  ["Clientes sin asesor", String(k.sinAsesor)],
+                  ...(administracion ? [["Clientes sin asesor", String(k.sinAsesor)]] : []),
                 ].map(([etq, val]) => (
                   <div key={etq} className="rounded-md border p-3">
                     <p className="text-xs text-text-2">{etq}</p>
@@ -249,17 +253,17 @@ export function InformesClient() {
 
               <div className="grid gap-6 lg:grid-cols-2">
                 <Barras titulo="Estado de los leads (pipeline actual)" nombre="leads-por-etapa" datos={inf.porEtapa.map((e) => ({ etiqueta: e.etapa, valor: e.leads }))} />
-                <Barras
+                {administracion && <Barras
                   titulo="Monto cotizado enviado por asesor"
                   nombre="monto-por-asesor"
                   formato={(v) => formatoPesos(v)}
                   datos={inf.porAsesor.map((a) => ({ etiqueta: a.nombre, valor: a.montoEnviado }))}
-                />
+                />}
               </div>
               <Lineas informe={inf} />
 
               <div className="overflow-x-auto">
-                <h3 className="mb-2 text-sm font-semibold">Desempeño por asesor</h3>
+                <h3 className="mb-2 text-sm font-semibold">{administracion ? "Desempeño por asesor" : "Mi desempeño"}</h3>
                 <table className="w-full min-w-[640px] text-sm">
                   <thead className="bg-subtle text-left text-xs text-text-2">
                     <tr>

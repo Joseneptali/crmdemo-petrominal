@@ -17,3 +17,13 @@ describe("horario de atención (hora de Colombia)", () => {
     expect(describirHorario(HORARIO_POR_DEFECTO)).toBe("lunes a viernes 08:00–17:30; sábado 08:00–12:00");
   });
 });
+
+describe("un aviso por cierre", () => {
+  it("no repite mientras siga cerrado y vuelve a avisar tras abrir", async () => {
+    const { huboApertura } = await import("@/lib/horario");
+    // Lunes 22:00 → martes 02:00 (Bogotá): sigue cerrado.
+    expect(huboApertura(HORARIO_POR_DEFECTO, new Date("2026-11-03T03:00:00Z"), new Date("2026-11-03T07:00:00Z"))).toBe(false);
+    // Lunes 22:00 → martes 22:00: abrió el martes.
+    expect(huboApertura(HORARIO_POR_DEFECTO, new Date("2026-11-03T03:00:00Z"), new Date("2026-11-04T03:00:00Z"))).toBe(true);
+  });
+});

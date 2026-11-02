@@ -26,6 +26,10 @@ export const HORARIO_POR_DEFECTO: Horario = {
   "6": ["08:00", "12:00"],
 };
 
+/** Modo IA: el aviso que sale antes de que la IA atienda. */
+export const MENSAJE_IA_POR_DEFECTO =
+  "¡Gracias por escribir a Petrominal S.A.S.! En este momento estamos fuera de nuestro horario de atención ({horario}). Nuestro asistente virtual le ayudará a registrar su solicitud y un asesor le contactará en el próximo horario hábil.";
+
 export const MENSAJE_POR_DEFECTO =
   "¡Gracias por escribir a Petrominal S.A.S.! En este momento estamos fuera de nuestro horario de atención ({horario}). Un asesor le responderá apenas estemos disponibles.";
 
@@ -70,4 +74,18 @@ export function describirHorario(horario: Horario): string {
   return grupos
     .map((g) => `${g.desde === g.hasta ? nombre(g.desde) : `${nombre(g.desde)} a ${nombre(g.hasta)}`} ${g.tramo}`)
     .join("; ");
+}
+
+/**
+ * ¿Abrió el negocio en algún momento entre las dos fechas? Así un aviso de
+ * fuera de horario sale una vez por cierre (de noche, fin de semana) y no una
+ * vez por mensaje. Revisa cada 15 minutos, hasta 8 días.
+ */
+export function huboApertura(horario: Horario, desde: Date, hasta: Date, zona = ZONA): boolean {
+  const paso = 15 * 60 * 1000;
+  const fin = Math.min(hasta.getTime(), desde.getTime() + 8 * 86_400_000);
+  for (let t = desde.getTime() + paso; t <= fin; t += paso) {
+    if (dentroDeHorario(horario, new Date(t), zona)) return true;
+  }
+  return hasta.getTime() - desde.getTime() > 8 * 86_400_000;
 }

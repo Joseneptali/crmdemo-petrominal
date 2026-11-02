@@ -73,15 +73,20 @@ export function appNavGroups({
   // sección aparte.
   if (agenda) trabajo.push({ href: "/bookings", label: "Citas", icon: CalendarDays });
 
-  const agente: NavItem[] = [];
-  // Un miembro del equipo no puede hacer ninguno de los pasos de la guía.
-  if (canConfigure(role)) {
-    agente.push({ href: "/onboarding", label: "Guía de inicio", icon: ListChecks });
+  // Petrominal — un asesor (miembro) no configura el agente ni ve los
+  // resultados del negocio: solo su trabajo y su propio informe de ventas.
+  if (!canConfigure(role)) {
+    return [
+      { title: "Trabajo", items: trabajo },
+      { items: [{ href: "/informes", label: "Mis ventas", icon: ClipboardList }] },
+    ];
   }
-  agente.push(
+
+  const agente: NavItem[] = [
+    { href: "/onboarding", label: "Guía de inicio", icon: ListChecks },
     { href: "/agent", label: "Agente", icon: Sparkles },
-    { href: "/lab", label: "Laboratorio", icon: FlaskConical }
-  );
+    { href: "/lab", label: "Laboratorio", icon: FlaskConical },
+  ];
 
   return [
     { title: "Trabajo", items: trabajo },
@@ -90,11 +95,15 @@ export function appNavGroups({
     {
       items: [
         { href: "/results", label: "Resultados", icon: ChartColumn },
-        // Petrominal — informes gerenciales, solo para la administración.
-        ...(canConfigure(role) ? [{ href: "/informes", label: "Informes", icon: ClipboardList }] : []),
+        { href: "/informes", label: "Informes", icon: ClipboardList },
       ],
     },
   ];
+}
+
+/** Petrominal — Ajustes solo para quien configura (propietario o administrador). */
+export function muestraAjustes(role: string | null | undefined): boolean {
+  return canConfigure(role);
 }
 
 export type SettingsLink = { href: string; label: string };

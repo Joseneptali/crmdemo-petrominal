@@ -100,7 +100,7 @@ export function HorarioCard() {
           <Label>Fuera de horario</Label>
           <label className="flex items-start gap-2 text-sm">
             <input type="radio" name="modo" checked={aj.modo === "ia"} disabled={!puedeEditar} onChange={() => setAj({ ...aj, modo: "ia" })} />
-            <span><strong>La IA atiende:</strong> responde, toma los datos del cliente y le dice que un asesor lo contactará en horario hábil.</span>
+            <span><strong>La IA atiende:</strong> se envía el aviso de horario y la IA responde, toma los datos del cliente y le dice que un asesor lo contactará en horario hábil (sin transferir).</span>
           </label>
           <label className="flex items-start gap-2 text-sm">
             <input type="radio" name="modo" checked={aj.modo === "mensaje"} disabled={!puedeEditar} onChange={() => setAj({ ...aj, modo: "mensaje" })} />
@@ -108,9 +108,11 @@ export function HorarioCard() {
           </label>
         </div>
 
-        {aj.modo === "mensaje" && (
+        {(
           <div className="space-y-1.5">
-            <Label htmlFor="msg-horario">Mensaje fuera de horario</Label>
+            <Label htmlFor="msg-horario">
+              {aj.modo === "ia" ? "Aviso que sale antes de que la IA atienda" : "Mensaje fuera de horario"}
+            </Label>
             <Textarea id="msg-horario" rows={3} value={aj.mensaje} disabled={!puedeEditar} onChange={(e) => setAj({ ...aj, mensaje: e.target.value })} />
             <p className="text-xs text-text-3">
               <span className="font-mono">{"{horario}"}</span> se cambia por el resumen del horario.

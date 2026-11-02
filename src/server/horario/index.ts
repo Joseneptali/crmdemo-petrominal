@@ -6,7 +6,9 @@ import { scoped } from "@/lib/db/tenant";
 import {
   dentroDeHorario,
   describirHorario,
+  huboApertura,
   HORARIO_POR_DEFECTO,
+  MENSAJE_IA_POR_DEFECTO,
   MENSAJE_POR_DEFECTO,
   type Horario,
 } from "@/lib/horario";
@@ -36,9 +38,6 @@ export const horarioSchema = z.object({
   mensaje: z.string().trim().max(1000).nullable().optional(),
 });
 
-/** Un cierre: no se repite aviso ni nota más de una vez cada 10 horas. */
-const ENTRE_AVISOS_MS = 10 * 60 * 60 * 1000;
-
 export async function leerHorario(organizationId: string): Promise<AjustesHorario> {
   const [aj] = await getDb()
     .select()
@@ -50,7 +49,9 @@ export async function leerHorario(organizationId: string): Promise<AjustesHorari
     activo: aj?.horarioActivo ?? false,
     modo: aj?.horarioModo ?? "ia",
     horario,
-    mensaje: aj?.mensajeFueraHorario?.trim() || MENSAJE_POR_DEFECTO,
+    mensaje:
+      aj?.mensajeFueraHorario?.trim() ||
+      ((aj?.horarioModo ?? "ia") === "ia" ? MENSAJE_IA_POR_DEFECTO : MENSAJE_POR_DEFECTO),
     descripcion: describirHorario(horario),
   };
 }
@@ -74,6 +75,11 @@ export async function guardarHorario(
     .limit(1);
   if (aj) await db.update(schema.petrominalAjustes).set(valores).where(eq(schema.petrominalAjustes.id, aj.id));
   else await db.insert(schema.petrominalAjustes).values({ id: newId("petrominalAjustes"), organizationId, ...valores });
+  // Horario nuevo: los avisos vuelven a salir con la nueva configuración.
+  await db
+    .update(schema.conversation)
+    .set({ fueraHorarioAt: null })
+    .where(scoped(schema.conversation.organizationId, organizationId));
   return leerHorario(organizationId);
 }
 
@@ -105,8 +111,9 @@ export async function revisarHorario(
       .from(schema.conversation)
       .where(eq(schema.conversation.id, conversationId))
       .limit(1);
+    // Un aviso por cierre: si desde el último no ha abierto, no se repite.
     const reciente =
-      conv?.fueraHorarioAt && Date.now() - conv.fueraHorarioAt.getTime() < ENTRE_AVISOS_MS;
+      !!conv?.fueraHorarioAt && !huboApertura(ajustes.horario, conv.fueraHorarioAt, new Date());
     const despachar = ajustes.modo === "ia";
     if (reciente) return { despachar };
 
@@ -121,10 +128,13 @@ export async function revisarHorario(
         ? `${destino.miembro?.nombre ?? "su asesor"} (asesor del cliente)`
         : `${destino.miembro?.nombre ?? "el administrador"} (administrador principal: cliente nuevo o sin asesor)`;
 
+    // El aviso de horario sale en los dos modos (una vez por cierre): en el
+    // modo IA, antes de que la IA conteste, para que el cliente sepa que un
+    // asesor lo atenderá en horario hábil.
+    await enviarTexto(ajustes.mensaje.replace("{horario}", ajustes.descripcion)).catch((err) =>
+      console.error("[horario] no se pudo enviar el aviso:", err)
+    );
     if (ajustes.modo === "mensaje") {
-      await enviarTexto(ajustes.mensaje.replace("{horario}", ajustes.descripcion)).catch((err) =>
-        console.error("[horario] no se pudo enviar el aviso:", err)
-      );
       await notaDelSistema(
         organizationId,
         conversationId,
@@ -134,7 +144,7 @@ export async function revisarHorario(
       await notaDelSistema(
         organizationId,
         conversationId,
-        `🌙 Mensaje fuera de horario: la IA lo atiende y toma sus datos. Queda pendiente para ${quien} cuando esté disponible.`
+        `🌙 Mensaje fuera de horario: se le envió el aviso de horario y la IA lo atiende y toma sus datos. Queda pendiente para ${quien} cuando esté disponible.`
       );
     }
     return { despachar };

@@ -9,12 +9,12 @@ const TIPOS = ["leads", "cotizaciones", "reuniones"] as const;
 
 /** Petrominal — exportar a Excel (CSV con punto y coma). */
 export const GET = withAuth(async (session, req: Request) => {
-  if (!veTodo(session.role)) return apiError(403, "forbidden", "Los informes son de la administración");
+  const asesor = veTodo(session.role) ? undefined : session.userId;
   const url = new URL(req.url);
   const tipo = url.searchParams.get("tipo") as (typeof TIPOS)[number];
   if (!TIPOS.includes(tipo)) return apiError(422, "tipo", "Tipo de exportación inválido");
   const { desde, hasta } = rangoDe(url);
-  const cuerpo = await exportarCsv(session.organizationId, tipo, desde, hasta);
+  const cuerpo = await exportarCsv(session.organizationId, tipo, desde, hasta, asesor);
   return new Response(cuerpo, {
     headers: {
       "content-type": "text/csv; charset=utf-8",

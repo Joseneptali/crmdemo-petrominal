@@ -1,4 +1,5 @@
 import { ReunionesClient } from "@/components/reuniones/reuniones-client";
+import { PaginaConScroll } from "@/components/pagina-con-scroll";
 
 export const dynamic = "force-dynamic";
 
@@ -9,5 +10,9 @@ export default async function ReunionesPage({
   searchParams: Promise<{ contacto?: string }>;
 }) {
   const { contacto } = await searchParams;
-  return <ReunionesClient contactoInicial={contacto} />;
+  return (
+    <PaginaConScroll>
+      <ReunionesClient contactoInicial={contacto} />
+    </PaginaConScroll>
+  );
 }

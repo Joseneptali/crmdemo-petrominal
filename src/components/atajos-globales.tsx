@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MessageCircle, Search } from "lucide-react";
 import { ATAJOS, esAyuda, esBarraDeComandos, esCampoDeTexto } from "@/lib/atajos";
 import { urlDeConversacion } from "@/lib/avisos-sistema";
-import { appNavGroups, SETTINGS_ITEM, type NavItem } from "@/lib/nav";
+import { appNavGroups, muestraAjustes, SETTINGS_ITEM, type NavItem } from "@/lib/nav";
 import { matchesQuery } from "@/lib/search";
 import { listaVigente } from "@/lib/lista-compartida";
 import { cn } from "@/lib/utils";
@@ -102,7 +102,7 @@ function BarraDeComandos({
   }, []);
 
   const resultados = useMemo<Resultado[]>(() => {
-    const pantallas = [...appNavGroups({ agenda, role }).flatMap((g) => g.items), SETTINGS_ITEM]
+    const pantallas = [...appNavGroups({ agenda, role }).flatMap((g) => g.items), ...(muestraAjustes(role) ? [SETTINGS_ITEM] : [])]
       .filter((item) => matchesQuery(q, { text: [item.label] }))
       .map((item) => ({ clase: "pantalla" as const, item }));
     const convs = conversaciones

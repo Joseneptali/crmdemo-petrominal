@@ -23,15 +23,28 @@ export function TeamClient() {
   const [email, setEmail] = useState("");
   const [tempPassword, setTempPassword] = useState("");
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
+  const [rol, setRol] = useState<"member" | "admin">("member");
+  const [puedeGestionar, setPuedeGestionar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const refetch = useCallback(async () => {
     const res = await fetch("/api/settings/team").catch(() => null);
     if (!res?.ok) return;
-    const data = (await res.json()) as { members: Member[] };
+    const data = (await res.json()) as { members: Member[]; puedeGestionar?: boolean };
     setMembers(data.members);
+    setPuedeGestionar(Boolean(data.puedeGestionar));
   }, []);
+
+  async function cambiarRol(memberId: string, role: "member" | "admin") {
+    const res = await fetch("/api/settings/team", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ memberId, role }),
+    }).catch(() => null);
+    if (!res?.ok) setError("No se pudo cambiar el rol");
+    void refetch();
+  }
 
   useEffect(() => {
     void refetch();
@@ -54,7 +67,7 @@ export function TeamClient() {
     const res = await fetch("/api/settings/team", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, email, password: tempPassword }),
+      body: JSON.stringify({ name, email, password: tempPassword, role: rol }),
     }).catch(() => null);
     setSaving(false);
     if (!res?.ok) {
@@ -100,6 +113,18 @@ export function TeamClient() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="team-rol">Rol</Label>
+            <select
+              id="team-rol"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm md:w-80"
+              value={rol}
+              onChange={(e) => setRol(e.target.value as "member" | "admin")}
+            >
+              <option value="member">Asesor comercial: ve solo sus clientes y sus ventas</option>
+              <option value="admin">Administrador: ve toda la operación y configura</option>
+            </select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="team-password">Contraseña temporal</Label>
@@ -153,9 +178,21 @@ export function TeamClient() {
               <p className="truncate text-sm font-medium">{m.name}</p>
               <p className="text-xs text-muted-foreground">{m.email}</p>
             </div>
-            <Badge variant={m.role === "owner" ? "default" : "secondary"}>
-              {m.role === "owner" ? "Propietario" : "Miembro"}
-            </Badge>
+            {puedeGestionar && m.role !== "owner" ? (
+              <select
+                className="h-8 rounded-md border bg-background px-2 text-sm"
+                value={m.role === "admin" ? "admin" : "member"}
+                onChange={(e) => void cambiarRol(m.id, e.target.value as "member" | "admin")}
+                aria-label={`Rol de ${m.name}`}
+              >
+                <option value="member">Asesor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            ) : (
+              <Badge variant={m.role === "owner" ? "default" : "secondary"}>
+                {m.role === "owner" ? "Propietario" : m.role === "admin" ? "Administrador" : "Asesor"}
+              </Badge>
+            )}
           </div>
         ))}
       </div>

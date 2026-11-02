@@ -5,6 +5,7 @@ import { getBranding } from "@/server/branding";
 import { agendaEnabled } from "@/server/agenda/flag";
 import { businessTimezone } from "@/server/analytics/period";
 import { ResultsClient } from "@/components/results/results-client";
+import { soloAdministracion } from "@/server/solo-administracion";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function ResultsPage() {
   // resuelve primero.
   const session = await getSessionOrNull();
   if (!session) redirect("/login");
+  // Petrominal — solo la administración.
+  await soloAdministracion();
   const [branding, timezone] = await Promise.all([
     getBranding(session.organizationId),
     businessTimezone(session.organizationId),
