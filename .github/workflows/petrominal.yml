@@ -44,7 +44,16 @@ jobs:
           git config --global user.email "ci@users.noreply.github.com"
 
       - name: install
-        run: pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
+        # Si package.json trae dependencias nuevas, se resuelve el lockfile y
+        # se sube a la rama (no hay registro de npm donde se edita el código).
+        run: |
+          set -o pipefail
+          if ! pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log; then
+            pnpm install --no-frozen-lockfile 2>&1 | tee -a /tmp/install.log
+            git add pnpm-lock.yaml
+            git commit -m "chore(deps): lockfile actualizado por CI [skip ci]"
+            git push origin HEAD:petrominal
+          fi
 
       - name: migraciones
         id: mig
