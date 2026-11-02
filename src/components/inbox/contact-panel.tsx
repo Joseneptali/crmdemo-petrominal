@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { FichaPanel } from "@/components/ficha-panel";
+import { AsesorCard } from "@/components/asesores/asesor-card";
 import { DeleteConversationDialog } from "./delete-conversation-dialog";
 
 
@@ -318,6 +319,9 @@ export function ContactPanel({
             </div>
           )}
         </section>
+
+        {/* Petrominal — asesor comercial del cliente */}
+        <AsesorCard contactId={contactId} refreshKey={refreshKey} />
 
         {/* Stepper de etapa */}
         {stages.length > 0 && leadId && (

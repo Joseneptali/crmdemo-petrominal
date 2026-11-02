@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/api";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { getBranding } from "@/server/branding";
+import { condicionDeCartera } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,8 @@ export const GET = withAuth(async (session) => {
         eq(schema.conversation.isTest, false)
       )
     )
-    .where(scoped(schema.lead.organizationId, session.organizationId))
+    // Petrominal — un asesor ve solo las tarjetas de su cartera.
+    .where(scoped(schema.lead.organizationId, session.organizationId, condicionDeCartera(session)))
     .orderBy(asc(schema.lead.position));
 
   // La moneda del negocio viaja con el tablero: el cliente suma sus columnas y

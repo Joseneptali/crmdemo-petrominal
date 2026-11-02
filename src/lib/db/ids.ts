@@ -43,6 +43,7 @@ const prefixes = {
   conversationNote: "nota",
   // Petrominal — catálogo y cotizador
   producto: "prd",
+  petrominalAjustes: "paj",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

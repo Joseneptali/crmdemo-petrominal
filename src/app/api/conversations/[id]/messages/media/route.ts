@@ -2,6 +2,7 @@ import { apiError, withAuth } from "@/lib/api";
 import { getConversation } from "@/server/inbox/queries";
 import { SendError, sendMediaMessage } from "@/server/inbox/send";
 import { MediaValidationError } from "@/server/whatsapp/media";
+import { puedeVerConversacion } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ const SEND_ERROR_STATUS: Record<SendError["code"], number> = {
  */
 export const POST = withAuth(async (session, req: Request, ctx: Params) => {
   const { id } = await ctx.params;
+  // Petrominal — un asesor solo abre las conversaciones de su cartera.
+  if (!(await puedeVerConversacion(session, id))) return apiError(404, "not_found", "Conversación no encontrada");
   const conv = await getConversation(session.organizationId, id);
   if (!conv) return apiError(404, "not_found", "Conversación no encontrada");
 

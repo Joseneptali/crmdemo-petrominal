@@ -11,6 +11,7 @@ import { avisarOlvido, type ResultadoOlvido } from "@/server/brains/deliver";
 import { publish } from "@/server/events/bus";
 import { eliminarConversacion } from "@/server/inbox/eliminar";
 import { serializeConversation, getConversation, updateConversation } from "@/server/inbox/queries";
+import { puedeVerConversacion } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
   const { id } = await ctx.params;
+  // Petrominal — un asesor solo abre las conversaciones de su cartera.
+  if (!(await puedeVerConversacion(session, id))) return apiError(404, "not_found", "Conversación no encontrada");
   const body = await parseBody(req, patchSchema);
   if (!body.ok) return body.response;
 
@@ -84,6 +87,8 @@ export const DELETE = withAuth(async (session, req: Request, ctx: Params) => {
     );
   }
   const { id } = await ctx.params;
+  // Petrominal — un asesor solo abre las conversaciones de su cartera.
+  if (!(await puedeVerConversacion(session, id))) return apiError(404, "not_found", "Conversación no encontrada");
   const alcance =
     new URL(req.url).searchParams.get("contacto") === "1" ? "contacto" : "hilo";
 

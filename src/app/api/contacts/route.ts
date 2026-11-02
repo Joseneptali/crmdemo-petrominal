@@ -8,6 +8,7 @@ import { normalizeMx } from "@/lib/meta/client";
 import { digitsOnly, normalizeText } from "@/lib/search";
 import { serializeContact } from "@/server/contacts";
 import { createLeadForContact } from "@/server/inbox/lead-activity";
+import { condicionDeCartera } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,9 @@ export const GET = withAuth(async (session, req: Request) => {
         schema.contact.organizationId,
         session.organizationId,
         search,
-        stageContactIds ? inArray(schema.contact.id, stageContactIds) : undefined
+        stageContactIds ? inArray(schema.contact.id, stageContactIds) : undefined,
+        // Petrominal — un asesor ve solo su cartera.
+        condicionDeCartera(session)
       )
     )
     .orderBy(desc(schema.contact.updatedAt))

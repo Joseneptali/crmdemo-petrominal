@@ -6,6 +6,7 @@ import {
   TemplateError,
   templateErrorStatus,
 } from "@/server/whatsapp/templates";
+import { puedeVerConversacion } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,8 @@ const bodySchema = z.object({
 
 export const POST = withAuth(async (session, req: Request, ctx: Params) => {
   const { id } = await ctx.params;
+  // Petrominal — un asesor solo abre las conversaciones de su cartera.
+  if (!(await puedeVerConversacion(session, id))) return apiError(404, "not_found", "Conversación no encontrada");
   const body = await parseBody(req, bodySchema);
   if (!body.ok) return body.response;
 

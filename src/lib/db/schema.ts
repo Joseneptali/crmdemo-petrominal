@@ -188,6 +188,11 @@ export const contact = pgTable(
      * (`getOrCreateConversation`); después manda el interruptor de la Bandeja.
      */
     aiPaused: boolean("ai_paused").notNull().default(false),
+    /**
+     * Petrominal — el asesor comercial dueño de este cliente. NULL = sin
+     * asesor: su conversación la atiende el administrador principal.
+     */
+    asesorUserId: text("asesor_user_id").references(() => user.id, { onDelete: "set null" }),
     archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1483,4 +1488,25 @@ export const zernioWhatsappCredentials = pgTable(
     uniqueIndex("zernio_whatsapp_credentials_org_uq").on(t.organizationId),
     uniqueIndex("zernio_whatsapp_credentials_account_ref_uq").on(t.accountRef),
   ]
+);
+
+/**
+ * Petrominal — ajustes comerciales de la organización (uno por organización).
+ * `admin_principal_user_id` recibe los clientes nuevos o sin asesor; NULL =
+ * el propietario.
+ */
+export const petrominalAjustes = pgTable(
+  "petrominal_ajustes",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    adminPrincipalUserId: text("admin_principal_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("petrominal_ajustes_org_uq").on(t.organizationId)]
 );

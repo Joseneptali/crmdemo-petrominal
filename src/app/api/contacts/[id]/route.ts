@@ -15,6 +15,7 @@ import {
   anuncioDelContacto,
   repararImagenSiFalta,
 } from "@/server/attribution/store";
+import { asesorDeContacto, puedeVerContacto } from "@/server/asesores";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export const GET = withAuth(async (session, _req: Request, ctx: Params) => {
   const { id } = await ctx.params;
+  // Petrominal — un asesor solo abre los clientes de su cartera.
+  if (!(await puedeVerContacto(session, id))) return apiError(404, "not_found", "Contacto no encontrado");
   const contact = await getContactById(session.organizationId, id);
   if (!contact) return apiError(404, "not_found", "Contacto no encontrado");
   const [stageRow, anuncio] = await Promise.all([
@@ -45,6 +48,8 @@ export const GET = withAuth(async (session, _req: Request, ctx: Params) => {
         }
       : null,
     lead: stageRow ? { id: stageRow.lead.id } : null,
+    // Petrominal — el asesor dueño del cliente (null = sin asesor).
+    asesor: contact.asesorUserId ? await asesorDeContacto(session.organizationId, id) : null,
   });
 });
 
@@ -65,6 +70,8 @@ const patchSchema = z.object({
 
 export const PATCH = withAuth(async (session, req: Request, ctx: Params) => {
   const { id } = await ctx.params;
+  // Petrominal — un asesor solo abre los clientes de su cartera.
+  if (!(await puedeVerContacto(session, id))) return apiError(404, "not_found", "Contacto no encontrado");
   const body = await parseBody(req, patchSchema);
   if (!body.ok) return body.response;
 
