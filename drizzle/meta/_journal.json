@@ -211,6 +211,13 @@
       "when": 1793590893110,
       "tag": "0029_cloudy_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793592673970,
+      "tag": "0030_dusty_firebird",
+      "breakpoints": true
     }
   ]
 }
