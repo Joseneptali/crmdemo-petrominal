@@ -32,6 +32,7 @@ import {
   resolverCita,
   type CitaEncontrada,
 } from "@/server/inbox/quotes";
+import { revisarHorario } from "@/server/horario";
 
 /** Tipos de contenido soportados; el resto se ignora sin error. */
 const SUPPORTED_TYPES = new Set([
@@ -555,7 +556,17 @@ export async function ingestInboundMessage(input: {
 
   // 036 — Quien contesta es el cerebro conectado; sin él, una persona. El
   // 025: `message.id` es lo que el despacho le debe al cerebro.
-  if (despachoActivo()) await despacharAlCerebro(conversation.id, organizationId, message.id);
+  // Petrominal — el horario de atención decide si la IA contesta (y avisa o
+  // deja nota). Las conversaciones de prueba no salen del CRM.
+  const { despachar } = conversation.isTest
+    ? { despachar: true }
+    : await revisarHorario(organizationId, conversation.id, contact.id, async (texto) => {
+        const { sendText } = await import("@/server/inbox/send");
+        await sendText({ conversationId: conversation.id, organizationId, text: texto });
+      });
+  if (despachar && despachoActivo()) {
+    await despacharAlCerebro(conversation.id, organizationId, message.id);
+  }
 }
 
 function toDate(timestamp: string): Date {

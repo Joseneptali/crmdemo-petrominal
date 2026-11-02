@@ -396,6 +396,8 @@ export const conversation = pgTable(
     lastInboundAt: timestamp("last_inbound_at"),
     lastMessageAt: timestamp("last_message_at"),
     unreadCount: integer("unread_count").notNull().default(0),
+    /** Petrominal — último aviso o nota de fuera de horario (uno por cierre). */
+    fueraHorarioAt: timestamp("fuera_horario_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -1506,6 +1508,13 @@ export const petrominalAjustes = pgTable(
     adminPrincipalUserId: text("admin_principal_user_id").references(() => user.id, {
       onDelete: "set null",
     }),
+    /** Horario de atención (Fase 4). Apagado = se atiende siempre. */
+    horarioActivo: boolean("horario_activo").notNull().default(false),
+    /** `mensaje` = solo avisa el horario; `ia` = la IA atiende y deja nota. */
+    horarioModo: text("horario_modo", { enum: ["mensaje", "ia"] }).notNull().default("ia"),
+    /** `{ "1": ["08:00","17:00"], … }` con 1 = lunes … 7 = domingo; sin clave = cerrado. */
+    horario: jsonb("horario").$type<Record<string, [string, string]>>(),
+    mensajeFueraHorario: text("mensaje_fuera_horario"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

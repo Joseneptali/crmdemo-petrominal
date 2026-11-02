@@ -3,6 +3,7 @@ import { getDb, schema } from "@/lib/db";
 import { apiError } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { serializeBotProfile, type BotLlm } from "@/server/bot/profile";
+import { fueraDeHorarioAhora, instruccionFueraDeHorario } from "@/server/horario";
 import { resolveAiProvider } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
@@ -44,5 +45,22 @@ export async function GET(req: Request) {
   const ia = await resolveAiProvider(organizationId);
   const llm: BotLlm = ia.ok && ia.provider.model ? { path: "/api/bot/llm", model: ia.provider.model } : null;
 
-  return Response.json(serializeBotProfile(profile, kb, llm));
+  // Petrominal — el horario de atención llega en las instrucciones: fuera de
+  // horario la IA atiende y toma datos, pero no transfiere.
+  const { fuera, ajustes } = await fueraDeHorarioAhora(organizationId).catch(() => ({
+    fuera: false,
+    ajustes: null,
+  }));
+  const conHorario =
+    ajustes?.activo
+      ? {
+          ...profile,
+          instructions:
+            (profile.instructions ?? "") +
+            `\n\nHorario de atención de los asesores: ${ajustes.descripcion} (hora de Colombia).` +
+            (fuera && ajustes.modo === "ia" ? instruccionFueraDeHorario(ajustes) : ""),
+        }
+      : profile;
+
+  return Response.json(serializeBotProfile(conHorario, kb, llm));
 }
