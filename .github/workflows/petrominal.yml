@@ -27,16 +27,21 @@ jobs:
       CHANNELS: "whatsapp,instagram,messenger,tiktok"
       AGENDA: "on"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
+
+      - name: identidad de git
+        run: |
+          git config --global user.name "petrominal-ci"
+          git config --global user.email "ci@users.noreply.github.com"
 
       - name: install
         run: pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
@@ -47,8 +52,6 @@ jobs:
           set -o pipefail
           pnpm db:generate 2>&1 | tee /tmp/db-generate.log
           if [ -n "$(git status --porcelain drizzle)" ]; then
-            git config user.name "petrominal-ci"
-            git config user.email "ci@users.noreply.github.com"
             git add drizzle
             git commit -m "chore(db): migración generada por CI [skip ci]"
             git push origin HEAD:petrominal
@@ -102,8 +105,6 @@ jobs:
             echo "| test | ${{ steps.test.outcome }} |"
             echo "| build | ${{ steps.build.outcome }} |"
           } > "$dir/reporte.md"
-          git config user.name "petrominal-ci"
-          git config user.email "ci@users.noreply.github.com"
           cd "$dir"
           git init -q -b ci-reportes
           git add -A
