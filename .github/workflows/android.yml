@@ -1,0 +1,81 @@
+# Compila la app Android (android/) y publica el APK como release
+# "app-android" del repositorio: el enlace de descarga es fijo y siempre
+# apunta a la última versión.
+name: App Android
+
+on:
+  push:
+    branches: [main, feat/app-android]
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      # Keystore propio opcional: si existen los secretos se usa ese en vez
+      # del que viene en el repo (recomendado para producción).
+      - name: Keystore propio (opcional)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "ANDROID_KEY_ALIAS=$KS_ALIAS" >> "$GITHUB_ENV"
+          fi
+
+      - name: Compilar APK
+        run: gradle --no-daemon assembleRelease
+
+      - name: Renombrar
+        run: cp app/build/outputs/apk/release/app-release.apk "SyrtelCRM.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SyrtelCRM-apk
+          path: android/SyrtelCRM.apk
+
+      - name: Publicar release "app-android"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Versión 1.0.${VERSION_CODE} · rama ${GITHUB_REF_NAME} · commit ${GITHUB_SHA::7}"
+          if gh release view app-android >/dev/null 2>&1; then
+            gh release upload app-android SyrtelCRM.apk --clobber
+            gh release edit app-android --notes "$NOTES"
+          else
+            gh release create app-android SyrtelCRM.apk --title "App Android Syrtel CRM" \
+              --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+          fi
