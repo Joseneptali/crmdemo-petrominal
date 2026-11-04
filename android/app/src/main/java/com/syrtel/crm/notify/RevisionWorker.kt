@@ -9,6 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.syrtel.crm.App
+import com.syrtel.crm.data.LinkState
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
@@ -23,7 +24,7 @@ class RevisionWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
         if (!app.api.hasSession()) return Result.success()
         val now = Instant.now().toString()
         val last = app.prefs.lastCheck
-        if (app.live.connected.value || last == null) {
+        if (app.live.state.value != LinkState.OFFLINE || last == null) {
             app.prefs.lastCheck = now
             return Result.success()
         }
@@ -38,7 +39,8 @@ class RevisionWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
                         c.id,
                         c.contact.name.ifBlank { c.contact.phone ?: "Cliente" },
                         c.preview ?: "Mensaje nuevo",
-                        if (c.needsHuman) Notifier.CHANNEL_HANDOFF else Notifier.CHANNEL_MESSAGES
+                        if (c.needsHuman) Notifier.CHANNEL_HANDOFF else Notifier.CHANNEL_MESSAGES,
+                        c.unreadCount
                     )
                 }
             }

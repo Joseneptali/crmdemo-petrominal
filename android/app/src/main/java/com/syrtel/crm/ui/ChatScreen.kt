@@ -9,6 +9,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -155,6 +162,15 @@ fun ChatScreen(conversationId: String, onBack: () -> Unit, onOpenContact: (Strin
             if (e.message.incoming) { markRead(); loadConv() }
         }
     }
+    // Sincronización: si esta conversación cambió, se traen sus mensajes.
+    LaunchedEffect(conversationId) {
+        app.live.events.filter { it.type == "sync" }.collect { ev ->
+            val mine = ev.changed.firstOrNull { it.id == conversationId } ?: return@collect
+            conv = mine
+            loadMessages()
+            if (mine.unreadCount > 0) markRead()
+        }
+    }
     // Estados de entrega, adjuntos listos, notas y cambios de la conversación.
     LaunchedEffect(conversationId) {
         app.live.events
@@ -185,6 +201,7 @@ fun ChatScreen(conversationId: String, onBack: () -> Unit, onOpenContact: (Strin
                 app.api.sendText(conversationId, text, replyTo?.id)
                 draft = ""; replyTo = null; error = null
                 loadMessages()
+                app.live.nudge()
             } catch (e: ApiException) {
                 error = e.message
             } finally { sending = false }
@@ -201,19 +218,23 @@ fun ChatScreen(conversationId: String, onBack: () -> Unit, onOpenContact: (Strin
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Tinta, titleContentColor = Crema,
+                    navigationIconContentColor = Crema, actionIconContentColor = Crema
+                ),
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable(enabled = c != null) { c?.let { onOpenContact(it.contact.id) } }
                     ) {
-                        Avatar(name, 36.dp)
+                        Avatar(name, 40.dp)
                         Spacer(Modifier.width(10.dp))
                         Column {
-                            Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 17.sp)
+                            Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Crema)
                             if (c != null) Text(
                                 subtitle(c), fontSize = 12.sp, maxLines = 1,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = Color(0xFFC9D3CF)
                             )
                         }
                     }
@@ -246,9 +267,18 @@ fun ChatScreen(conversationId: String, onBack: () -> Unit, onOpenContact: (Strin
         }
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().imePadding()) {
-            TabRow(selectedTabIndex = tab) {
-                Tab(tab == 0, { tab = 0 }, text = { Text("Chat") })
-                Tab(tab == 1, { tab = 1 }, text = { Text(if (notas.isEmpty()) "Notas internas" else "Notas internas (${notas.size})") })
+            TabRow(
+                selectedTabIndex = tab,
+                containerColor = Tinta, contentColor = Crema,
+                indicator = { pos ->
+                    TabRowDefaults.PrimaryIndicator(
+                        Modifier.tabIndicatorOffset(pos[tab]), color = Naranja, width = 48.dp
+                    )
+                },
+                divider = {}
+            ) {
+                Tab(tab == 0, { tab = 0 }, text = { Text("Chat", fontWeight = FontWeight.SemiBold) }, unselectedContentColor = Color(0xFF9DAAA4))
+                Tab(tab == 1, { tab = 1 }, text = { Text(if (notas.isEmpty()) "Notas internas" else "Notas internas (${notas.size})", fontWeight = FontWeight.SemiBold) }, unselectedContentColor = Color(0xFF9DAAA4))
             }
             ErrorBar(error)
             if (c != null && c.needsHuman) Banner(
@@ -389,21 +419,24 @@ private fun Bubble(m: Message, onReply: (Message) -> Unit) {
     val scope = rememberCoroutineScope()
     var menu by remember { mutableStateOf(false) }
     val mine = !m.incoming
-    val bg = if (mine) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val dark = isSystemInDarkTheme()
+    val bg = if (mine) (if (dark) Color(0xFF3A2A20) else Tinta) else MaterialTheme.colorScheme.surface
+    val fg = if (mine) Crema else MaterialTheme.colorScheme.onSurface
+    val meta = if (mine) Color(0xFFB9C4BF) else MaterialTheme.colorScheme.onSurfaceVariant
     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
         Surface(
-            color = bg,
-            shape = RoundedCornerShape(16.dp, 16.dp, if (mine) 4.dp else 16.dp, if (mine) 16.dp else 4.dp),
-            tonalElevation = 1.dp,
+            color = bg, contentColor = fg,
+            shape = RoundedCornerShape(20.dp, 20.dp, if (mine) 6.dp else 20.dp, if (mine) 20.dp else 6.dp),
+            shadowElevation = if (mine) 0.dp else 1.dp,
             modifier = Modifier.widthIn(max = 300.dp).combinedClickable(onClick = {}, onLongClick = { menu = true })
         ) {
             Column(Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                 if (mine && (m.aiGenerated || m.origin == "ai" || m.origin == "template")) Text(
                     if (m.origin == "template") "Plantilla" else "Agente IA",
-                    fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium
+                    fontSize = 11.sp, color = if (mine) NaranjaClaro else Acento, fontWeight = FontWeight.SemiBold
                 )
                 m.replyTo?.let { q ->
-                    Surface(color = Color.Black.copy(alpha = 0.06f), shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                    Surface(color = if (mine) Color.White.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surfaceContainerHigh, shape = RoundedCornerShape(10.dp), modifier = Modifier.padding(bottom = 4.dp)) {
                         Text(
                             q.text ?: q.mediaKind?.let { Notifier.mediaLabel(it) } ?: "Mensaje",
                             fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -414,18 +447,18 @@ private fun Bubble(m: Message, onReply: (Message) -> Unit) {
                 m.media?.let { MediaView(it) }
                 val body = m.text?.takeIf { it.isNotBlank() } ?: m.media?.caption
                 if (body != null) Text(body, fontSize = 15.sp)
-                else if (m.media == null) Text("(${m.type})", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else if (m.media == null) Text("(${m.type})", fontSize = 13.sp, color = meta)
                 Row(Modifier.align(Alignment.End), verticalAlignment = Alignment.CenterVertically) {
-                    Text(clockTime(m.createdAt), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(clockTime(m.createdAt), fontSize = 11.sp, color = meta)
                     if (mine) Text(
                         " " + when (m.status) {
                             "pending" -> "🕓"; "sent" -> "✓"; "delivered" -> "✓✓"; "read" -> "✓✓"; "failed" -> "⚠"; else -> ""
                         },
                         fontSize = 11.sp,
-                        color = when (m.status) { "read" -> Acento; "failed" -> Rojo; else -> MaterialTheme.colorScheme.onSurfaceVariant }
+                        color = when (m.status) { "read" -> NaranjaClaro; "failed" -> Color(0xFFFF8A80); else -> meta }
                     )
                 }
-                if (m.status == "failed" && m.error != null) Text(m.error, fontSize = 12.sp, color = Rojo)
+                if (m.status == "failed" && m.error != null) Text(m.error, fontSize = 12.sp, color = if (mine) Color(0xFFFF8A80) else Rojo)
             }
         }
         DropdownMenu(menu, { menu = false }) {
@@ -512,7 +545,7 @@ private fun Composer(
     replyTo: Message?, onCancelReply: () -> Unit,
     canAttach: Boolean, onAttach: () -> Unit, onQuick: () -> Unit, onSend: () -> Unit,
 ) {
-    Surface(tonalElevation = 2.dp) {
+    Surface(color = MaterialTheme.colorScheme.background) {
         Column(Modifier.navigationBarsPadding()) {
             if (replyTo != null) Row(
                 Modifier.fillMaxWidth().padding(start = 14.dp, top = 6.dp),
@@ -528,15 +561,32 @@ private fun Composer(
             Row(Modifier.padding(6.dp), verticalAlignment = Alignment.Bottom) {
                 IconButton(onClick = onQuick) { Icon(Icons.Default.Bolt, "Respuestas rápidas") }
                 if (canAttach) IconButton(onClick = onAttach) { Icon(Icons.Default.AttachFile, "Adjuntar") }
-                OutlinedTextField(
+                TextField(
                     value = draft, onValueChange = onDraft,
                     placeholder = { Text("Escribe un mensaje") },
-                    modifier = Modifier.weight(1f).heightIn(max = 140.dp),
-                    shape = RoundedCornerShape(24.dp)
+                    modifier = Modifier.weight(1f).heightIn(min = 48.dp, max = 140.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 )
-                IconButton(onClick = onSend, enabled = draft.isNotBlank() && !sending) {
-                    if (sending) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                    else Icon(Icons.AutoMirrored.Filled.Send, "Enviar", tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(6.dp))
+                val canSend = draft.isNotBlank() && !sending
+                Box(
+                    Modifier.size(48.dp).background(if (canSend) NaranjaBoton else MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape)
+                        .clickable(enabled = canSend, onClick = onSend),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (sending) LogoLoader(30.dp, onDark = true)
+                    else Icon(
+                        Icons.AutoMirrored.Filled.Send, "Enviar",
+                        tint = if (canSend) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

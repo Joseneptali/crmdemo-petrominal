@@ -123,6 +123,20 @@ class Api(private val context: Context, val prefs: Prefs) {
             "/api/conversations" + (since?.let { "?since=" + enc(it) } ?: "")
         ).conversations
 
+    /**
+     * Conversaciones que cambiaron después de `since` (hora del SERVIDOR) y
+     * la hora del servidor de esta respuesta, para la siguiente vuelta. Así
+     * el reloj del teléfono no importa y una respuesta vacía pesa casi nada.
+     */
+    suspend fun syncConversations(since: String?): Pair<List<Conversation>, String> = io {
+        val path = "/api/conversations" + (since?.let { "?since=" + enc(it) } ?: "")
+        execute(Request.Builder().url(url(path)).get().build()).use { res ->
+            val serverNow = res.headers.getDate("Date")?.toInstant() ?: Instant.now()
+            val list = json.decodeFromString<ConversationsResponse>(res.body?.string().orEmpty()).conversations
+            list to serverNow.toString()
+        }
+    }
+
     suspend fun getMessages(conversationId: String): List<Message> =
         getJson<MessagesResponse>("/api/conversations/$conversationId/messages").messages
 

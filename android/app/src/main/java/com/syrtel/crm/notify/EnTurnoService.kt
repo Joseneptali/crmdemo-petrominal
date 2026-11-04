@@ -50,7 +50,7 @@ class EnTurnoService : Service() {
             .build()
         val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING else 0
         ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type)
-        app.live.acquire(OWNER)
+        app.live.acquire(OWNER, 12_000L)
         return START_STICKY
     }
 

@@ -114,6 +114,10 @@ fun ContactScreen(contactId: String, onBack: () -> Unit, onOpenChat: (String) ->
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Tinta, titleContentColor = Crema,
+                    navigationIconContentColor = Crema, actionIconContentColor = Crema
+                ),
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") } },
                 title = { Text("Ficha del cliente") }
             )

@@ -60,11 +60,7 @@ fun ContactsScreen(onOpen: (String) -> Unit) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             ErrorBar(error)
-            OutlinedTextField(
-                q, { q = it }, placeholder = { Text("Buscar por nombre o teléfono") },
-                leadingIcon = { Icon(Icons.Default.Search, null) }, singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)
-            )
+            SearchField(q, { q = it }, "Buscar por nombre o teléfono")
             val l = list
             when {
                 l == null && error == null -> Loading()
@@ -94,6 +90,7 @@ fun ContactsScreen(onOpen: (String) -> Unit) {
         }
         FloatingActionButton(
             onClick = { creating = true },
+            containerColor = NaranjaBoton, contentColor = androidx.compose.ui.graphics.Color.White,
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
         ) { Icon(Icons.Default.PersonAdd, "Nuevo contacto") }
     }
@@ -112,6 +109,7 @@ fun ContactsScreen(onOpen: (String) -> Unit) {
     )
 }
 
+@Composable
 fun priorityColor(p: String) = when (p) { "alta" -> Rojo; "media" -> Ambar; else -> Verde }
 
 @Composable

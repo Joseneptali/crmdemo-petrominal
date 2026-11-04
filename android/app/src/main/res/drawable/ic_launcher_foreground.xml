@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Burbuja de chat con tres puntos: atender clientes. -->
+<!-- Logo Syrtel: burbuja crema con trazo y punto naranja (medido del logo oficial). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M36,34h36a8,8 0,0 1,8 8v20a8,8 0,0 1,-8 8H50l-11,9v-9h-3a8,8 0,0 1,-8 -8V42a8,8 0,0 1,8 -8z" />
-    <path android:fillColor="#0D5BFF" android:pathData="M44,52m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0" />
-    <path android:fillColor="#0D5BFF" android:pathData="M54,52m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0" />
-    <path android:fillColor="#0D5BFF" android:pathData="M64,52m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FBF9F4" android:pathData="M34.99,23.69 H73.01 A11.99,11.99 0,0 1 85.0,35.68 V62.41 A11.99,11.99 0,0 1 73.01,74.4 H43.05 L28.76,84.31 V72.55 A11.99,11.99 0,0 1 23.0,62.41 V35.68 A11.99,11.99 0,0 1 34.99,23.69 Z" />
+    <path android:strokeColor="#E25B16" android:strokeWidth="4.38" android:strokeLineCap="round" android:pathData="M37.98,61.49 L59.42,39.83" />
+    <path android:fillColor="#E25B16" android:pathData="M61.260000000000005,33.83 a5.3,5.3 0,1 1 10.6,0 a5.3,5.3 0,1 1 -10.6,0 Z" />
 </vector>

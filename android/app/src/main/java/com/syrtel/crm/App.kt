@@ -35,7 +35,7 @@ class App : Application(), ImageLoaderFactory {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 AppState.foreground = true
-                live.acquire("pantalla")
+                live.acquire("pantalla", 4_000L)
             }
 
             override fun onStop(owner: LifecycleOwner) {

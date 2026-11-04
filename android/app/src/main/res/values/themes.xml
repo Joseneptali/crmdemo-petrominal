@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.SyrtelCRM" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Fondo verde tinta desde el primer cuadro: la animación del logo arranca sin destello blanco. -->
+    <style name="Theme.SyrtelCRM" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@color/fondo</item>
+        <item name="android:windowBackground">@color/tinta</item>
+        <item name="android:colorAccent">@color/naranja</item>
     </style>
-    <color name="acento">#0D5BFF</color>
-    <color name="fondo">#F6F7F9</color>
-    <color name="ic_fondo">#0D5BFF</color>
+    <color name="tinta">#101C18</color>
+    <color name="crema">#FBF9F4</color>
+    <color name="naranja">#E25B16</color>
+    <color name="ic_fondo">#101C18</color>
 </resources>

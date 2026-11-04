@@ -30,8 +30,13 @@ class Prefs(context: Context) {
 
     /** Modo «En turno»: conexión en vivo y avisos al instante. */
     var enTurno: Boolean
-        get() = sp.getBoolean("en_turno", false)
+        get() = sp.getBoolean("en_turno", true)
         set(v) = sp.edit().putBoolean("en_turno", v).apply()
+
+    /** Ya se pidió quitar la optimización de batería (una sola vez). */
+    var askedBattery: Boolean
+        get() = sp.getBoolean("asked_battery", false)
+        set(v) = sp.edit().putBoolean("asked_battery", v).apply()
 
     /** Último momento revisado por el respaldo periódico (ISO-8601). */
     var lastCheck: String?
