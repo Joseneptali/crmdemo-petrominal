@@ -29,21 +29,32 @@ jobs:
       VERSION_CODE: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v5
+        id: checkout
 
       - uses: actions/setup-java@v5
+        id: java
         with:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.10.2"
+      # El runner de Ubuntu ya trae el SDK de Android (ANDROID_HOME); solo
+      # se acepta la licencia y se instala Gradle a mano.
+      - name: Preparar SDK y Gradle
+        id: preparar
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          test -n "$SDK" || { echo "::error title=SDK::No hay SDK de Android en el runner"; exit 1; }
+          echo "sdk.dir=$SDK" > local.properties
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.10.2-bin.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.10.2/bin" >> "$GITHUB_PATH"
 
       # Keystore propio opcional: si existen los secretos se usa ese en vez
       # del que viene en el repo (recomendado para producción).
       - name: Keystore propio (opcional)
+        id: keystore
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -59,6 +70,7 @@ jobs:
       # Si falla, deja los errores como anotación del check (legibles sin
       # abrir el log completo).
       - name: Compilar APK
+        id: compilar
         run: |
           set +e
           gradle --no-daemon --console=plain assembleRelease 2>&1 | tee build.log
@@ -82,6 +94,7 @@ jobs:
           path: android/SyrtelCRM.apk
 
       - name: Publicar release "app-android"
+        id: publicar
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -93,3 +106,9 @@ jobs:
             gh release create app-android SyrtelCRM.apk --title "App Android Syrtel CRM" \
               --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
           fi
+
+      - name: Informe de fallo
+        if: failure()
+        working-directory: .
+        run: |
+          echo "::error title=Paso que fallo::checkout=${{ steps.checkout.outcome }} java=${{ steps.java.outcome }} preparar=${{ steps.preparar.outcome }} keystore=${{ steps.keystore.outcome }} compilar=${{ steps.compilar.outcome }} publicar=${{ steps.publicar.outcome }}"
