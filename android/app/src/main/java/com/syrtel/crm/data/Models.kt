@@ -5,7 +5,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 /*
- * Espejo de los DTOs de Vocero CRM (src/lib/types.ts y las rutas /api/*).
+ * Espejo de los DTOs de Vocero CRM (src/lib/types.ts y las rutas /api/...).
  * Todo campo que el servidor pueda omitir o añadir en el futuro tiene valor
  * por defecto: el JSON se lee con ignoreUnknownKeys.
  */

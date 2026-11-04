@@ -35,7 +35,7 @@ val json = Json {
 
 /**
  * Cliente de la API de Vocero CRM. Usa la MISMA superficie que la web
- * (`/api/*` con la cookie de sesión de Better Auth): no hace falta tocar el
+ * (`/api/...` con la cookie de sesión de Better Auth): no hace falta tocar el
  * servidor ni crear llaves nuevas, y cada asesor entra con su usuario.
  */
 class Api(private val context: Context, val prefs: Prefs) {

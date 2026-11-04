@@ -77,7 +77,8 @@ jobs:
           code=${PIPESTATUS[0]}
           if [ "$code" != "0" ]; then
             {
-              grep -E "^e: |error:|What went wrong|Could not|> " build.log | head -60
+              grep -E "^e: " build.log | sed "s|file:///home/runner/work/[^ ]*/android/app/src/main/java/com/syrtel/crm/||" | head -80
+              grep -E "What went wrong|Could not" build.log | head -10
               echo "----- final del log -----"
               tail -40 build.log
             } | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > err.txt
