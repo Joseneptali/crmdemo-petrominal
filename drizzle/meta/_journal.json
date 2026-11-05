@@ -239,6 +239,13 @@
       "when": 1793599544348,
       "tag": "0033_safe_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793895416916,
+      "tag": "0034_careful_jazinda",
+      "breakpoints": true
     }
   ]
 }
