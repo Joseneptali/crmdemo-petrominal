@@ -1,0 +1,179 @@
+$ vitest run
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/runner/work/crmdemo-petrominal/crmdemo-petrominal[39m
+
+ [32m✓[39m tests/unit/cuenta-de-mensajes.test.ts [2m([22m[2m25 tests[22m[2m)[22m[90m 51[2mms[22m[39m
+ [32m✓[39m tests/unit/responder-citando.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 430[2mms[22m[39m
+ [32m✓[39m tests/unit/anuncio-origen.test.ts [2m([22m[2m29 tests[22m[2m)[22m[90m 28[2mms[22m[39m
+ [32m✓[39m tests/unit/brain-status.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 336[2mms[22m[39m
+ [32m✓[39m tests/unit/medios-almacenamiento.test.ts [2m([22m[2m24 tests[22m[2m)[22m[33m 1047[2mms[22m[39m
+   [33m[2m✓[22m[39m 037 — doctor y salud[2m > [22msin la bandera, el doctor no menciona el bucket [33m668[2mms[22m[39m
+ [32m✓[39m tests/unit/messenger.test.ts [2m([22m[2m26 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/whatsapp-save-webhook.test.ts [2m([22m[2m19 tests[22m[2m)[22m[90m 69[2mms[22m[39m
+ [32m✓[39m tests/unit/embedded-signup.test.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 83[2mms[22m[39m
+ [32m✓[39m tests/unit/tiktok.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/despacho-contrato.test.ts [2m([22m[2m35 tests[22m[2m)[22m[90m 54[2mms[22m[39m
+ [32m✓[39m tests/unit/contraste-temas.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 46[2mms[22m[39m
+ [32m✓[39m tests/unit/doctor.test.ts [2m([22m[2m26 tests[22m[2m)[22m[90m 55[2mms[22m[39m
+ [32m✓[39m tests/unit/agenda-huecos-por-fecha.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 1133[2mms[22m[39m
+ [32m✓[39m tests/unit/subscribed-apps.test.ts [2m([22m[2m15 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-status.test.ts [2m([22m[2m22 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/zernio-canales.test.ts [2m([22m[2m27 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/calendario-citas.test.ts [2m([22m[2m25 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+[2m4:30:42 PM[22m [33m[1m[vite][22m[39m [33mwarning: invalid import "../../src/lib/version?plat=${Date.now()}". A file extension must be included in the static part of the import. For example: import(`./foo/${bar}.js`).[39m
+  Plugin: [35mvite:dynamic-import-vars[39m
+  File: [36m/home/runner/work/crmdemo-petrominal/crmdemo-petrominal/tests/unit/version.test.ts[39m
+[2m4:30:42 PM[22m [33m[1m[vite][22m[39m [33mwarning: invalid import "../../src/lib/version?both=${Date.now()}". A file extension must be included in the static part of the import. For example: import(`./foo/${bar}.js`).[39m
+  Plugin: [35mvite:dynamic-import-vars[39m
+  File: [36m/home/runner/work/crmdemo-petrominal/crmdemo-petrominal/tests/unit/version.test.ts[39m
+[2m4:30:42 PM[22m [33m[1m[vite][22m[39m [33mwarning: invalid import "../../src/lib/version?none=${Date.now()}". A file extension must be included in the static part of the import. For example: import(`./foo/${bar}.js`).[39m
+  Plugin: [35mvite:dynamic-import-vars[39m
+  File: [36m/home/runner/work/crmdemo-petrominal/crmdemo-petrominal/tests/unit/version.test.ts[39m
+[2m4:30:42 PM[22m [33m[1m[vite][22m[39m [33mwarning: invalid import "../../src/lib/version?con=${Date.now()}". A file extension must be included in the static part of the import. For example: import(`./foo/${bar}.js`).[39m
+  Plugin: [35mvite:dynamic-import-vars[39m
+  File: [36m/home/runner/work/crmdemo-petrominal/crmdemo-petrominal/tests/unit/version.test.ts[39m
+[2m4:30:42 PM[22m [33m[1m[vite][22m[39m [33mwarning: invalid import "../../src/lib/version?sin=${Date.now()}". A file extension must be included in the static part of the import. For example: import(`./foo/${bar}.js`).[39m
+  Plugin: [35mvite:dynamic-import-vars[39m
+  File: [36m/home/runner/work/crmdemo-petrominal/crmdemo-petrominal/tests/unit/version.test.ts[39m
+ [32m✓[39m tests/unit/version.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 372[2mms[22m[39m
+   [33m[2m✓[22m[39m un commit que no salió del build se presenta como NO verificado[2m > [22m/api/health[2m > [22mcommit del build → commitVerified: true [33m304[2mms[22m[39m
+ [32m✓[39m tests/unit/connectors.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 2046[2mms[22m[39m
+   [33m[2m✓[22m[39m google[2m > [22mcrear re-lee el evento hasta que aparece el enlace de Meet [33m804[2mms[22m[39m
+   [33m[2m✓[22m[39m google[2m > [22msi la conferencia sigue pendiente, devuelve el evento SIN enlace en vez de fallar [33m1209[2mms[22m[39m
+ [32m✓[39m tests/unit/forward-image.test.ts [2m([22m[2m27 tests[22m[2m)[22m[90m 64[2mms[22m[39m
+ [32m✓[39m tests/unit/agenda-context.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+ [32m✓[39m tests/unit/branding.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/manifests-plataformas.test.ts [2m([22m[2m30 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+ [32m✓[39m tests/unit/ai-config.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/analytics.test.ts [2m([22m[2m18 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/secreto-zernio.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 657[2mms[22m[39m
+   [33m[2m✓[22m[39m guardar una conexión por Zernio[2m > [22mInstagram: la fila no contiene el secreto en claro y se descifra igual [33m642[2mms[22m[39m
+ [32m✓[39m tests/unit/bookings-rango-api.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 111[2mms[22m[39m
+ [32m✓[39m tests/unit/bot-availability-date.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 1605[2mms[22m[39m
+ [32m✓[39m tests/unit/slots.test.ts [2m([22m[2m25 tests[22m[2m)[22m[90m 55[2mms[22m[39m
+ [32m✓[39m tests/unit/despacho-config.test.ts [2m([22m[2m26 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/temas.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 65[2mms[22m[39m
+[90mstderr[2m | tests/unit/webhook-eventos.test.ts[2m > [22m[2mrecibirEvento: lo que hace la ruta tras validar[2m > [22m[2msi no se pudo guardar, 503 y no procesa nada: reintenta quien mandó
+[22m[39m[webhook] no se pudo guardar el evento; se responde 503 para que la fuente reintente: ECONNREFUSED
+
+[90mstderr[2m | tests/unit/webhook-eventos.test.ts[2m > [22m[2mrecibirEvento: lo que hace la ruta tras validar[2m > [22m[2msi resolver la organización falla (base caída), también 503
+[22m[39m[tiktok] no se pudo guardar el evento; se responde 503 para que la fuente reintente: ECONNREFUSED
+
+ [32m✓[39m tests/unit/webhook-eventos.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/webhook-registration.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/booking-race.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 296[2mms[22m[39m
+ [32m✓[39m tests/unit/health.test.ts [2m([22m[2m13 tests[22m[2m)[22m[90m 43[2mms[22m[39m
+ [32m✓[39m tests/unit/availability.test.ts [2m([22m[2m15 tests[22m[2m)[22m[90m 80[2mms[22m[39m
+ [32m✓[39m tests/unit/forward-message.test.ts [2m([22m[2m17 tests[22m[2m)[22m[90m 32[2mms[22m[39m
+ [32m✓[39m tests/unit/init-env.test.ts [2m([22m[2m13 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+ [32m✓[39m tests/unit/analytics-period.test.ts [2m([22m[2m22 tests[22m[2m)[22m[90m 36[2mms[22m[39m
+ [32m✓[39m tests/unit/favicon.test.ts [2m([22m[2m21 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/bot-gateway.test.ts [2m([22m[2m24 tests[22m[2m)[22m[90m 155[2mms[22m[39m
+ [32m✓[39m tests/unit/ai-adapter.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 4543[2mms[22m[39m
+   [33m[2m✓[22m[39m chatJson (reintentos y errores tipados)[2m > [22mproveedor caído (500 persistente) → error tipado, jamás excepción [33m1503[2mms[22m[39m
+   [33m[2m✓[22m[39m chatJson (reintentos y errores tipados)[2m > [22m429 sobre la fila → no pausa y agota los reintentos [33m1503[2mms[22m[39m
+   [33m[2m✓[22m[39m chatJson (reintentos y errores tipados)[2m > [22m401 con la llave del entorno (sin fila) → reintenta y no marca nada [33m1507[2mms[22m[39m
+ [32m✓[39m tests/unit/agenda-sandbox.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 344[2mms[22m[39m
+   [33m[2m✓[22m[39m una cita del Laboratorio jamás llega al proveedor[2m > [22mal CREAR: la cita se registra como de prueba y no se crea reunión [33m334[2mms[22m[39m
+ [32m✓[39m tests/unit/bot-llm-proxy.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-guide.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 20[2mms[22m[39m
+ [32m✓[39m tests/unit/bot-profile.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/media-headers.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/bot-etapa.test.ts [2m([22m[2m14 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/nav.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/ai-credentials.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 416[2mms[22m[39m
+   [33m[2m✓[22m[39m saveAiCredential[2m > [22mcifra la llave: la fila no contiene el texto plano y queda activa [33m405[2mms[22m[39m
+ [32m✓[39m tests/unit/calendario-citas-arreglos.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 53[2mms[22m[39m
+ [32m✓[39m tests/unit/capi-payload.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/switch.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 82[2mms[22m[39m
+ [32m✓[39m tests/unit/interruptor-agente.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/ai-probe.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 42[2mms[22m[39m
+ [32m✓[39m tests/unit/pwa.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 479[2mms[22m[39m
+ [32m✓[39m tests/unit/openapi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/olvido-contrato.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/webm-ogg.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/templates.test.ts [2m([22m[2m15 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/media-send.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 116[2mms[22m[39m
+ [32m✓[39m tests/unit/reply-window.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/money.test.ts [2m([22m[2m16 tests[22m[2m)[22m[90m 36[2mms[22m[39m
+ [32m✓[39m tests/unit/respuestas-rapidas.test.ts [2m([22m[2m13 tests[22m[2m)[22m[90m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/zernio-webhooks-cache.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 35[2mms[22m[39m
+ [32m✓[39m tests/unit/reset-password.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 2476[2mms[22m[39m
+   [33m[2m✓[22m[39m reset-password[2m > [22mel hash que imprime deja entrar con esa contraseña y no con otra [33m667[2mms[22m[39m
+   [33m[2m✓[22m[39m reset-password[2m > [22macentos y eñes sobreviven el viaje (normalización NFKC) [33m465[2mms[22m[39m
+   [33m[2m✓[22m[39m reset-password[2m > [22mel SQL apunta a la credencial del usuario, no a toda la tabla [33m399[2mms[22m[39m
+   [33m[2m✓[22m[39m reset-password[2m > [22muna comilla en el correo se escapa en vez de romper el SQL [33m403[2mms[22m[39m
+ [32m✓[39m tests/unit/lista-compartida-064.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32m✓[39m tests/unit/emojis.test.ts [2m([22m[2m15 tests[22m[2m)[22m[90m 53[2mms[22m[39m
+ [32m✓[39m tests/unit/conectores-cache-y-prueba.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/atajos.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/social-text.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/respuestas-de-boton.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/linkify.test.ts [2m([22m[2m13 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/conversions.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/agenda-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/bot-context-bsuid.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-page.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/analytics-agenda.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/notas-internas.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/channels.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/cotizaciones.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/contact-import.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/identity.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/reenvio.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/meta-client.test.ts [2m([22m[2m12 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/avisos-sistema.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/stage-history-guard.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/search.test.ts [2m([22m[2m11 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/pulido-028.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/rate-limit.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 42[2mms[22m[39m
+ [32m✓[39m tests/unit/template-languages.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/ficha-guard.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 56[2mms[22m[39m
+ [32m✓[39m tests/unit/echoes.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/borradores.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/media-dir.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/agenda-huecos-modelo.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/eventos-hilo.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 31[2mms[22m[39m
+[90mstderr[2m | tests/unit/judge.test.ts[2m > [22m[2mjudgeCase (FR-032)[2m > [22m[2msalida inválida tras reintentos internos → judge_failed (no lanza)
+[22m[39m[lab] juez falló para fuera_de_kb: invalid_output — no cumple el esquema (raw=...)
+
+ [32m✓[39m tests/unit/judge.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/ficha-ui.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+ [32m✓[39m tests/unit/priority.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 16[2mms[22m[39m
+ [32m✓[39m tests/unit/send-sandbox.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 579[2mms[22m[39m
+   [33m[2m✓[22m[39m sandbox del Laboratorio en el sender[2m > [22mconversación is_test → lanza sandbox_violation y NO llama a Graph [33m578[2mms[22m[39m
+ [32m✓[39m tests/unit/apariencia-route.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/nota-de-voz.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/contacto-nombre.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m tests/unit/conflict-targets.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 43[2mms[22m[39m
+ [32m✓[39m tests/unit/destinatario-meta.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/zernio-whatsapp.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/credentials.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 522[2mms[22m[39m
+   [33m[2m✓[22m[39m credenciales de WhatsApp[2m > [22msaveCredentials cifra el token: la fila no contiene el texto plano [33m520[2mms[22m[39m
+ [32m✓[39m tests/unit/offers.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/ai-client.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 34[2mms[22m[39m
+ [32m✓[39m tests/unit/webhook.test.ts [2m([22m[2m9 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/contact-source.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/atribucion-flag.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/roles-como-datos.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/agenda-flag.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/horario.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 43[2mms[22m[39m
+ [32m✓[39m tests/unit/send-errors.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/crypto.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 111[2mms[22m[39m
+ [32m✓[39m tests/unit/window.test.ts [2m([22m[2m6 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/reuniones.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/tenant.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/filtros-bandeja.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/juez-traspaso.test.ts [2m([22m[2m2 tests[22m[2m)[22m[90m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/registration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/env-brain-health.test.ts [2m([22m[2m3 tests[22m[2m)[22m[90m 161[2mms[22m[39m
+ [32m✓[39m tests/unit/dev-guard.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/avisos-de-mensajes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/smoke.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/status-monotonic.test.ts [2m([22m[2m5 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m129 passed[39m[22m[90m (129)[39m
+[2m      Tests [22m [1m[32m1472 passed[39m[22m[90m (1472)[39m
+[2m   Start at [22m 16:30:34
+[2m   Duration [22m 38.03s[2m (transform 4.24s, setup 0ms, collect 50.94s, tests 20.50s, environment 39ms, prepare 13.79s)[22m
+
