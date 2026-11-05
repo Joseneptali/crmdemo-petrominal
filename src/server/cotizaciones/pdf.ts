@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
 import {
@@ -55,7 +55,7 @@ const M = 24;
 const ANCHO = W - 2 * M;
 
 /** Alturas del pie y del bloque final (condiciones + nota + observaciones). */
-const ALTO_PIE = 56;
+const ALTO_PIE = 68;
 const ALTO_CONDICIONES = 118;
 const ALTO_NOTA = 40;
 const ALTO_OBS = 40;
@@ -105,6 +105,30 @@ async function fotoDe(doc: PDFDocument, organizationId: string, productoId: stri
   }
 }
 
+/**
+ * Logos de las marcas que se muestran en el pie (PNG en `public/marcas-pie/`,
+ * en orden alfabético: nómbralos `1-....png`, `2-....png`…). Sin archivos, el
+ * pie sale sin esa fila de logos.
+ */
+async function logosPie(doc: PDFDocument): Promise<PDFImage[]> {
+  const dir = path.join(process.cwd(), "public", "marcas-pie");
+  let archivos: string[] = [];
+  try {
+    archivos = (await readdir(dir)).filter((a: string) => a.toLowerCase().endsWith(".png")).sort();
+  } catch {
+    return [];
+  }
+  const imgs: PDFImage[] = [];
+  for (const a of archivos.slice(0, 8)) {
+    try {
+      imgs.push(await doc.embedPng(await readFile(path.join(dir, a))));
+    } catch {
+      // Un archivo dañado no tumba la cotización.
+    }
+  }
+  return imgs;
+}
+
 /** Un PNG de `public/`; si no está, la plantilla se dibuja sin él. */
 async function imagenPublica(doc: PDFDocument, archivo: string): Promise<PDFImage | null> {
   try {
@@ -138,6 +162,7 @@ export async function generarPdfCotizacion(organizationId: string, cot: Cotizaci
   const fbi = await doc.embedFont(StandardFonts.HelveticaBoldOblique);
   const imgLogo = await imagenPublica(doc, "petrominal-logo.png");
   const imgNova = await imagenPublica(doc, "novasling-logo.png");
+  const marcas = await logosPie(doc);
 
   let page: PDFPage = doc.addPage([W, H]);
 
@@ -171,19 +196,63 @@ export async function generarPdfCotizacion(organizationId: string, cot: Cotizaci
   };
 
   // ---------- pie (cada página) ----------
+  // Íconos de línea (12×12) en el naranja de la marca.
+  const ICONOS = {
+    telefono:
+      "M2.6 0.6 L4.6 0.6 L5.6 3.4 L4.2 4.6 C4.9 6.2 5.9 7.2 7.4 7.9 L8.6 6.5 L11.4 7.4 L11.4 9.4 C11.4 10.6 10.5 11.4 9.4 11.4 C4.6 11.1 0.9 7.4 0.6 2.6 C0.6 1.5 1.4 0.6 2.6 0.6 Z",
+    ubicacion:
+      "M6 0.6 C3.2 0.6 1.2 2.7 1.2 5.3 C1.2 8.6 6 12.4 6 12.4 C6 12.4 10.8 8.6 10.8 5.3 C10.8 2.7 8.8 0.6 6 0.6 Z M6 3.4 C7.1 3.4 7.8 4.2 7.8 5.2 C7.8 6.2 7.1 7 6 7 C4.9 7 4.2 6.2 4.2 5.2 C4.2 4.2 4.9 3.4 6 3.4 Z",
+    correo: "M0.6 2.2 L11.4 2.2 L11.4 10 L0.6 10 Z M0.6 2.2 L6 6.6 L11.4 2.2",
+  };
+  const icono = (d: string, x: number, yBase: number) =>
+    page.drawSvgPath(d, { x, y: yBase + 11, borderColor: NARANJA, borderWidth: 1.3, scale: 0.95 });
+
   const pie = () => {
     rect(M, M, ANCHO, ALTO_PIE, AZUL_OSCURO);
-    const fila = `Tel. ${EMPRESA.telefonos}     ·     ${EMPRESA.direccion}     ·     ${EMPRESA.correo}`;
-    centro(fila, M, W - M, M + ALTO_PIE - 20, 8, fb, BLANCO);
-    const wWeb = ancho(EMPRESA.web, 8.5, fb) + 36;
-    page.drawRectangle({
-      x: W / 2 - wWeb / 2,
-      y: M,
-      width: wWeb,
-      height: 18,
-      color: NARANJA,
-    });
-    centro(EMPRESA.web, M, W - M, M + 6, 8.5, fb, BLANCO);
+
+    // Fila 1: teléfono · dirección · correo, con su ícono, centrados.
+    const SIZE = 8.6;
+    const grupos: [string, string][] = [
+      [ICONOS.telefono, EMPRESA.telefonos],
+      [ICONOS.ubicacion, EMPRESA.direccion],
+      [ICONOS.correo, EMPRESA.correo],
+    ];
+    const GAP_ICONO = 6;
+    const GAP_GRUPO = 20;
+    const total =
+      grupos.reduce((s, [, t]) => s + 12 + GAP_ICONO + ancho(t, SIZE, fb), 0) + GAP_GRUPO * (grupos.length - 1);
+    let x = W / 2 - total / 2;
+    const yFila = M + ALTO_PIE - 24;
+    for (const [d, t] of grupos) {
+      icono(d, x, yFila - 2);
+      x += 12 + GAP_ICONO;
+      texto(t, x, yFila, SIZE, fb, BLANCO);
+      x += ancho(t, SIZE, fb) + GAP_GRUPO;
+    }
+
+    // Pestaña naranja con la web, pegada al borde inferior y con esquinas superiores redondeadas.
+    const wWeb = ancho(EMPRESA.web, 9, fb) + 60;
+    const hWeb = 22;
+    const r = 9;
+    const x0 = W / 2 - wWeb / 2;
+    page.drawSvgPath(
+      `M0 ${hWeb} L0 ${r} Q0 0 ${r} 0 L${wWeb - r} 0 Q${wWeb} 0 ${wWeb} ${r} L${wWeb} ${hWeb} Z`,
+      { x: x0, y: M + hWeb, color: NARANJA }
+    );
+    centro(EMPRESA.web, M, W - M, M + 7, 9, fb, BLANCO);
+
+    // Fila 2: logos de marcas, repartidos a los dos lados de la pestaña.
+    if (marcas.length) {
+      const izq = marcas.slice(0, Math.floor(marcas.length / 2));
+      const der = marcas.slice(izq.length);
+      const H_LOGO = 15;
+      const repartir = (lista: PDFImage[], xa: number, xb: number) => {
+        const paso = (xb - xa) / lista.length;
+        lista.forEach((img, k) => imagenEnCaja(img, xa + k * paso + 6, M + 5, paso - 12, H_LOGO));
+      };
+      repartir(izq, M + 30, x0 - 14);
+      repartir(der, x0 + wWeb + 14, W - M - 30);
+    }
   };
 
   // ---------- encabezado (primera página) ----------
