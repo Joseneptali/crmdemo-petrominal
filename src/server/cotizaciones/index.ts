@@ -9,6 +9,7 @@ import {
   aCentavos,
   aMilesimas,
   CONDICIONES_POR_DEFECTO,
+  FORMA_PAGO_POR_DEFECTO,
   totales,
   type CotizacionDto,
   type CotizacionResumenDto,
@@ -65,6 +66,7 @@ export const CLAVES = {
   empresa: ["empresa", "company", "razon_social", "razonsocial", "compania"],
   nit: ["nit", "nit_empresa", "documento", "rut"],
   ciudad: ["ciudad", "city", "municipio"],
+  direccion: ["direccion", "address", "direccion_empresa", "domicilio"],
   cargo: ["cargo", "puesto", "rol"],
 };
 
@@ -75,11 +77,19 @@ const itemSchema = z.object({
   unidad: z.string().trim().max(12).optional(),
   cantidad: z.number().positive().max(1_000_000),
   precioUnitario: z.number().min(0).max(100_000_000_000),
+  diasEntrega: z.string().trim().max(40).nullable().optional(),
 });
+
+const textoCorto = z.string().trim().max(300).nullable().optional();
 
 export const guardarSchema = z.object({
   ivaPorcentaje: z.number().int().min(0).max(100).optional(),
   validezDias: z.number().int().min(1).max(365).optional(),
+  solicitud: textoCorto,
+  formaPago: textoCorto,
+  lugarEntrega: textoCorto,
+  descuentoPorcentaje: z.number().int().min(0).max(100).optional(),
+  zonaFranca: z.boolean().optional(),
   condiciones: z.string().max(4000).nullable().optional(),
   notas: z.string().max(4000).nullable().optional(),
   items: z.array(itemSchema).max(200).optional(),
@@ -118,6 +128,7 @@ export async function crearCotizacion(sesion: Sesion, contactId: string): Promis
         // La cotización es del asesor del cliente; si no tiene, de quien la hace.
         asesorUserId: c.asesorUserId ?? sesion.userId,
         condiciones: CONDICIONES_POR_DEFECTO,
+        formaPago: FORMA_PAGO_POR_DEFECTO,
       });
       return id;
     } catch (err) {
@@ -170,7 +181,9 @@ export async function obtenerCotizacion(sesion: Sesion, id: string): Promise<Cot
     : [];
   const t = totales(
     items.map((r) => r.item),
-    cot.ivaPorcentaje
+    cot.ivaPorcentaje,
+    cot.descuentoPorcentaje,
+    cot.zonaFranca
   );
   return {
     id: cot.id,
@@ -182,11 +195,19 @@ export async function obtenerCotizacion(sesion: Sesion, id: string): Promise<Cot
       telefono: contact.phone,
       correo: deFicha(contact.ficha, CLAVES.correo),
       empresa: deFicha(contact.ficha, CLAVES.empresa),
+      nit: deFicha(contact.ficha, CLAVES.nit),
+      direccion: deFicha(contact.ficha, CLAVES.direccion),
+      ciudad: deFicha(contact.ficha, CLAVES.ciudad),
     },
     asesor: asesor ?? null,
     moneda: cot.moneda,
     ivaPorcentaje: cot.ivaPorcentaje,
     validezDias: cot.validezDias,
+    solicitud: cot.solicitud,
+    formaPago: cot.formaPago,
+    lugarEntrega: cot.lugarEntrega,
+    descuentoPorcentaje: cot.descuentoPorcentaje,
+    zonaFranca: cot.zonaFranca,
     condiciones: cot.condiciones,
     notas: cot.notas,
     items: items.map(({ item, producto }) => ({
@@ -197,9 +218,12 @@ export async function obtenerCotizacion(sesion: Sesion, id: string): Promise<Cot
       unidad: item.unidad,
       cantidad: item.cantidadMilesimas / 1000,
       precioUnitario: item.precioUnitarioCents / 100,
+      diasEntrega: item.diasEntrega,
       fotoUrl: producto?.fotoMime ? urlFoto(producto.id, producto.fotoVersion) : null,
     })),
     subtotal: t.subtotalCents / 100,
+    descuento: t.descuentoCents / 100,
+    base: t.baseCents / 100,
     iva: t.ivaCents / 100,
     total: t.totalCents / 100,
     createdAt: cot.createdAt.toISOString(),
@@ -247,12 +271,17 @@ export async function guardarCotizacion(
           unidad: i.unidad || "UND",
           cantidadMilesimas: aMilesimas(i.cantidad),
           precioUnitarioCents: aCentavos(i.precioUnitario),
+          diasEntrega: i.diasEntrega || null,
         }))
       );
     }
   }
   const [cot] = await db
-    .select({ iva: schema.cotizacion.ivaPorcentaje })
+    .select({
+      iva: schema.cotizacion.ivaPorcentaje,
+      descuento: schema.cotizacion.descuentoPorcentaje,
+      zonaFranca: schema.cotizacion.zonaFranca,
+    })
     .from(schema.cotizacion)
     .where(eq(schema.cotizacion.id, id))
     .limit(1);
@@ -264,7 +293,10 @@ export async function guardarCotizacion(
     .from(schema.cotizacionItem)
     .where(eq(schema.cotizacionItem.cotizacionId, id));
   const iva = datos.ivaPorcentaje ?? cot?.iva ?? 19;
-  const t = totales(items, iva);
+  const descuento = datos.descuentoPorcentaje ?? cot?.descuento ?? 0;
+  const zonaFranca = datos.zonaFranca ?? cot?.zonaFranca ?? false;
+  const t = totales(items, iva, descuento, zonaFranca);
+
   await db
     .update(schema.cotizacion)
     .set({
@@ -272,6 +304,11 @@ export async function guardarCotizacion(
       ...(datos.validezDias !== undefined ? { validezDias: datos.validezDias } : {}),
       ...(datos.condiciones !== undefined ? { condiciones: datos.condiciones } : {}),
       ...(datos.notas !== undefined ? { notas: datos.notas } : {}),
+      ...(datos.solicitud !== undefined ? { solicitud: datos.solicitud || null } : {}),
+      ...(datos.formaPago !== undefined ? { formaPago: datos.formaPago || null } : {}),
+      ...(datos.lugarEntrega !== undefined ? { lugarEntrega: datos.lugarEntrega || null } : {}),
+      ...(datos.descuentoPorcentaje !== undefined ? { descuentoPorcentaje: datos.descuentoPorcentaje } : {}),
+      ...(datos.zonaFranca !== undefined ? { zonaFranca: datos.zonaFranca } : {}),
       subtotalCents: t.subtotalCents,
       totalCents: t.totalCents,
       updatedAt: new Date(),

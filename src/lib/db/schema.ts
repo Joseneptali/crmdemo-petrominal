@@ -1551,7 +1551,17 @@ export const cotizacion = pgTable(
     moneda: text("moneda").notNull().default("COP"),
     ivaPorcentaje: integer("iva_porcentaje").notNull().default(19),
     validezDias: integer("validez_dias").notNull().default(15),
+    /** Lo que pidió el cliente («ESLINGA CON RECUBRIMIENTO EN CORDURA»). */
+    solicitud: text("solicitud"),
+    formaPago: text("forma_pago"),
+    lugarEntrega: text("lugar_entrega"),
+    /** Descuento sobre el subtotal, en porcentaje entero. */
+    descuentoPorcentaje: integer("descuento_porcentaje").notNull().default(0),
+    /** Zona franca: IVA exento (no se cobra aunque haya tarifa). */
+    zonaFranca: boolean("zona_franca").notNull().default(false),
+    /** El recuadro NOTA del PDF (aviso de devoluciones). */
     condiciones: text("condiciones"),
+    /** El recuadro OBSERVACIONES del PDF. */
     notas: text("notas"),
     subtotalCents: bigint("subtotal_cents", { mode: "number" }).notNull().default(0),
     totalCents: bigint("total_cents", { mode: "number" }).notNull().default(0),
@@ -1585,6 +1595,8 @@ export const cotizacionItem = pgTable(
     /** Milésimas: 2,5 metros = 2500. */
     cantidadMilesimas: integer("cantidad_milesimas").notNull().default(1000),
     precioUnitarioCents: bigint("precio_unitario_cents", { mode: "number" }).notNull().default(0),
+    /** Texto libre: «INMEDIATA», «8 DÍAS HÁBILES»… */
+    diasEntrega: text("dias_entrega"),
   },
   (t) => [index("cotizacion_item_cot_idx").on(t.organizationId, t.cotizacionId)]
 );

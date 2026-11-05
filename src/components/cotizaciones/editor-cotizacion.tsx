@@ -35,6 +35,11 @@ export function EditorCotizacion({ id }: { id: string }) {
   const [renglones, setRenglones] = useState<Renglon[]>([]);
   const [iva, setIva] = useState(19);
   const [validez, setValidez] = useState(15);
+  const [solicitud, setSolicitud] = useState("");
+  const [formaPago, setFormaPago] = useState("");
+  const [lugarEntrega, setLugarEntrega] = useState("");
+  const [descuento, setDescuento] = useState(0);
+  const [zonaFranca, setZonaFranca] = useState(false);
   const [condiciones, setCondiciones] = useState("");
   const [notas, setNotas] = useState("");
   const [sucio, setSucio] = useState(false);
@@ -52,6 +57,11 @@ export function EditorCotizacion({ id }: { id: string }) {
     setRenglones(c.items.map((i) => ({ ...i, clave: nuevaClave() })));
     setIva(c.ivaPorcentaje);
     setValidez(c.validezDias);
+    setSolicitud(c.solicitud ?? "");
+    setFormaPago(c.formaPago ?? "");
+    setLugarEntrega(c.lugarEntrega ?? "");
+    setDescuento(c.descuentoPorcentaje);
+    setZonaFranca(c.zonaFranca);
     setCondiciones(c.condiciones ?? "");
     setNotas(c.notas ?? "");
     setPara((p) => p || c.contacto.correo || "");
@@ -99,6 +109,7 @@ export function EditorCotizacion({ id }: { id: string }) {
         unidad: p.unidad,
         cantidad: 1,
         precioUnitario: 0,
+        diasEntrega: null,
         fotoUrl: p.fotoUrl,
       },
     ]);
@@ -131,6 +142,11 @@ export function EditorCotizacion({ id }: { id: string }) {
       body: JSON.stringify({
         ivaPorcentaje: iva,
         validezDias: validez,
+        solicitud: solicitud.trim() || null,
+        formaPago: formaPago.trim() || null,
+        lugarEntrega: lugarEntrega.trim() || null,
+        descuentoPorcentaje: descuento >= 0 && descuento <= 100 ? Math.round(descuento) : 0,
+        zonaFranca,
         condiciones: condiciones || null,
         notas: notas || null,
         items: renglones.map((r) => ({
@@ -140,6 +156,7 @@ export function EditorCotizacion({ id }: { id: string }) {
           unidad: r.unidad,
           cantidad: r.cantidad > 0 ? r.cantidad : 1,
           precioUnitario: r.precioUnitario >= 0 ? r.precioUnitario : 0,
+          diasEntrega: r.diasEntrega?.trim() || null,
         })),
       }),
     }).catch(() => null);
@@ -201,7 +218,9 @@ export function EditorCotizacion({ id }: { id: string }) {
   }
 
   const subtotal = renglones.reduce((s, r) => s + r.cantidad * r.precioUnitario, 0);
-  const valorIva = Math.round(subtotal * iva) / 100;
+  const valorDcto = Math.round(subtotal * descuento) / 100;
+  const base = subtotal - valorDcto;
+  const valorIva = zonaFranca ? 0 : Math.round(base * iva) / 100;
   const sinFoto = renglones.filter((r) => !r.fotoUrl).map((r) => r.referencia);
   const sinPrecio = renglones.filter((r) => !(r.precioUnitario > 0)).length;
   const bloqueo =
@@ -252,8 +271,21 @@ export function EditorCotizacion({ id }: { id: string }) {
             onChange={(e) => void subirFoto(e.target.files?.[0])}
           />
 
+          <div className="space-y-1.5">
+            <Label htmlFor="solicitud">Solicitud del cliente</Label>
+            <Input
+              id="solicitud"
+              placeholder="Ej.: ESLINGA CON RECUBRIMIENTO EN CORDURA"
+              value={solicitud}
+              onChange={(e) => {
+                setSolicitud(e.target.value);
+                setSucio(true);
+              }}
+            />
+          </div>
+
           <div className="overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[880px] text-sm">
               <thead className="bg-subtle text-left text-xs text-text-2">
                 <tr>
                   <th className="p-2">Foto</th>
@@ -261,6 +293,7 @@ export function EditorCotizacion({ id }: { id: string }) {
                   <th className="p-2">Descripción</th>
                   <th className="p-2">Unidad</th>
                   <th className="p-2 text-right">Cantidad</th>
+                  <th className="p-2">Días entrega</th>
                   <th className="p-2 text-right">Vr. unitario</th>
                   <th className="p-2 text-right">Total</th>
                   <th className="p-2" />
@@ -301,6 +334,13 @@ export function EditorCotizacion({ id }: { id: string }) {
                         onChange={(e) => cambiar(r.clave, { cantidad: Number(e.target.value) })}
                       />
                     </td>
+                    <td className="w-28 p-2">
+                      <Input
+                        value={r.diasEntrega ?? ""}
+                        placeholder="Inmediata"
+                        onChange={(e) => cambiar(r.clave, { diasEntrega: e.target.value })}
+                      />
+                    </td>
                     <td className="w-36 p-2">
                       <Input
                         type="number"
@@ -330,7 +370,7 @@ export function EditorCotizacion({ id }: { id: string }) {
                 ))}
                 {renglones.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-4 text-center text-sm text-text-3">
+                    <td colSpan={9} className="p-4 text-center text-sm text-text-3">
                       Busca productos del catálogo para agregarlos.
                     </td>
                   </tr>
@@ -396,15 +436,33 @@ export function EditorCotizacion({ id }: { id: string }) {
             </div>
 
             <div className="space-y-1 rounded-md border p-3 text-sm">
+              <label className="flex items-center gap-2 pb-1 font-medium">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={zonaFranca}
+                  onChange={(e) => { setZonaFranca(e.target.checked); setSucio(true); }}
+                />
+                Zona franca (IVA exento)
+              </label>
               <div className="flex justify-between"><span>Subtotal</span><span>{formatoPesos(subtotal, cot.moneda)}</span></div>
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1">
+                  Dcto.
+                  <Input type="number" min={0} max={100} className="h-7 w-16 text-right" value={descuento} onChange={(e) => { setDescuento(Number(e.target.value)); setSucio(true); }} />%
+                </span>
+                <span>{formatoPesos(valorDcto, cot.moneda)}</span>
+              </div>
+              <div className="flex justify-between"><span>Base</span><span>{formatoPesos(base, cot.moneda)}</span></div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1">
                   IVA
-                  <Input type="number" min={0} max={100} className="h-7 w-16 text-right" value={iva} onChange={(e) => { setIva(Number(e.target.value)); setSucio(true); }} />%
+                  <Input type="number" min={0} max={100} disabled={zonaFranca} className="h-7 w-16 text-right" value={iva} onChange={(e) => { setIva(Number(e.target.value)); setSucio(true); }} />%
+                  {zonaFranca && <span className="text-xs text-text-3">exento</span>}
                 </span>
                 <span>{formatoPesos(valorIva, cot.moneda)}</span>
               </div>
-              <div className="flex justify-between border-t pt-1 text-base font-semibold"><span>Total</span><span>{formatoPesos(subtotal + valorIva, cot.moneda)}</span></div>
+              <div className="flex justify-between border-t pt-1 text-base font-semibold"><span>Total</span><span>{formatoPesos(base + valorIva, cot.moneda)}</span></div>
               <div className="flex items-center gap-2 pt-2">
                 <Label htmlFor="validez">Validez (días)</Label>
                 <Input id="validez" type="number" min={1} className="h-8 w-20" value={validez} onChange={(e) => { setValidez(Number(e.target.value)); setSucio(true); }} />
@@ -414,7 +472,18 @@ export function EditorCotizacion({ id }: { id: string }) {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="condiciones">Condiciones comerciales</Label>
+              <Label htmlFor="formaPago">Forma / cond. de pago</Label>
+              <Input id="formaPago" placeholder="Ej.: CREDITO 30 DIAS F/F" value={formaPago} onChange={(e) => { setFormaPago(e.target.value); setSucio(true); }} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lugarEntrega">Lugar de entrega</Label>
+              <Input id="lugarEntrega" placeholder="Dirección de entrega" value={lugarEntrega} onChange={(e) => { setLugarEntrega(e.target.value); setSucio(true); }} />
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="condiciones">Nota (aviso del pie del PDF)</Label>
               <Textarea id="condiciones" rows={3} value={condiciones} onChange={(e) => { setCondiciones(e.target.value); setSucio(true); }} />
             </div>
             <div className="space-y-1.5">

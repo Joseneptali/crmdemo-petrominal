@@ -13,6 +13,8 @@ export type ItemCotizacionDto = {
   unidad: string;
   cantidad: number;
   precioUnitario: number;
+  /** Texto libre: «INMEDIATA», «8 DÍAS HÁBILES»… */
+  diasEntrega: string | null;
   fotoUrl: string | null;
 };
 
@@ -26,15 +28,29 @@ export type CotizacionDto = {
     telefono: string | null;
     correo: string | null;
     empresa: string | null;
+    nit: string | null;
+    direccion: string | null;
+    ciudad: string | null;
   };
   asesor: { nombre: string; email: string } | null;
   moneda: string;
   ivaPorcentaje: number;
   validezDias: number;
+  solicitud: string | null;
+  formaPago: string | null;
+  lugarEntrega: string | null;
+  descuentoPorcentaje: number;
+  /** Zona franca: IVA exento. */
+  zonaFranca: boolean;
+  /** Recuadro NOTA del PDF. */
   condiciones: string | null;
+  /** Recuadro OBSERVACIONES del PDF. */
   notas: string | null;
   items: ItemCotizacionDto[];
   subtotal: number;
+  descuento: number;
+  /** Subtotal menos descuento: sobre ella se liquida el IVA. */
+  base: number;
   iva: number;
   total: number;
   createdAt: string;
@@ -58,8 +74,11 @@ export type CotizacionResumenDto = {
   enviadaAt: string | null;
 };
 
+/** Texto por defecto del recuadro NOTA. */
 export const CONDICIONES_POR_DEFECTO =
-  "Precios en pesos colombianos. Forma de pago: a convenir. Tiempo de entrega: sujeto a disponibilidad al momento de la orden. Los productos cumplen la norma ASME B30.9 cuando aplica.";
+  "Agradecemos verificar esta cotización antes de generar su orden de compra, ya que una vez despachado el material no aceptamos devolución. Material cortado NO tiene cambio.";
+
+export const FORMA_PAGO_POR_DEFECTO = "CONTADO";
 
 export function aCentavos(pesos: number): number {
   return Math.round(pesos * 100);
@@ -74,16 +93,23 @@ export function totalRenglonCents(cantidadMilesimas: number, precioCents: number
   return Math.round((cantidadMilesimas * precioCents) / 1000);
 }
 
+/**
+ * Subtotal → descuento → base → IVA (sobre la base; 0 en zona franca) → total.
+ */
 export function totales(
   items: { cantidadMilesimas: number; precioUnitarioCents: number }[],
-  ivaPorcentaje: number
-): { subtotalCents: number; ivaCents: number; totalCents: number } {
+  ivaPorcentaje: number,
+  descuentoPorcentaje = 0,
+  zonaFranca = false
+): { subtotalCents: number; descuentoCents: number; baseCents: number; ivaCents: number; totalCents: number } {
   const subtotalCents = items.reduce(
     (s, i) => s + totalRenglonCents(i.cantidadMilesimas, i.precioUnitarioCents),
     0
   );
-  const ivaCents = Math.round((subtotalCents * ivaPorcentaje) / 100);
-  return { subtotalCents, ivaCents, totalCents: subtotalCents + ivaCents };
+  const descuentoCents = Math.round((subtotalCents * descuentoPorcentaje) / 100);
+  const baseCents = subtotalCents - descuentoCents;
+  const ivaCents = zonaFranca ? 0 : Math.round((baseCents * ivaPorcentaje) / 100);
+  return { subtotalCents, descuentoCents, baseCents, ivaCents, totalCents: baseCents + ivaCents };
 }
 
 export function formatoPesos(valor: number, moneda = "COP"): string {

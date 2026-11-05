@@ -46,7 +46,7 @@ export async function enviarPorWhatsapp(sesion: Sesion, id: string, mensaje?: st
   }
   const caption =
     mensaje?.trim() ||
-    `Cotización ${numeroCotizacion(dto.numero)} de Petrominal S.A.S. por ${formatoPesos(dto.total, dto.moneda)} (IVA incluido). Quedamos atentos a sus comentarios.`;
+    `Cotización ${numeroCotizacion(dto.numero)} de Petrominal S.A.S. por ${formatoPesos(dto.total, dto.moneda)} (${dto.zonaFranca ? "IVA exento" : "IVA incluido"}). Quedamos atentos a sus comentarios.`;
   try {
     await sendMediaMessage({
       conversationId: conv.id,
@@ -79,7 +79,7 @@ export async function enviarPorCorreo(
   const num = numeroCotizacion(dto.numero);
   const cuerpo =
     mensaje?.trim() ||
-    `Estimado(a) ${dto.contacto.nombre}:\n\nAdjuntamos la cotización ${num} de Petrominal S.A.S. por ${formatoPesos(dto.total, dto.moneda)} (IVA incluido), con una validez de ${dto.validezDias} días.\n\nQuedamos atentos a cualquier inquietud.\n\nCordialmente,\n${dto.asesor?.nombre ?? "Equipo comercial Petrominal S.A.S."}`;
+    `Estimado(a) ${dto.contacto.nombre}:\n\nAdjuntamos la cotización ${num} de Petrominal S.A.S. por ${formatoPesos(dto.total, dto.moneda)} (${dto.zonaFranca ? "IVA exento" : "IVA incluido"}), con una validez de ${dto.validezDias} días.\n\nQuedamos atentos a cualquier inquietud.\n\nCordialmente,\n${dto.asesor?.nombre ?? "Equipo comercial Petrominal S.A.S."}`;
   await enviarCorreo(sesion.organizationId, sesion.userId, {
     para,
     asunto: `Cotización ${num} — Petrominal S.A.S.`,

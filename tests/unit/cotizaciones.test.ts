@@ -14,7 +14,26 @@ describe("cotizador Petrominal", () => {
       ],
       19
     );
-    expect(t).toEqual({ subtotalCents: 35_000_000, ivaCents: 6_650_000, totalCents: 41_650_000 });
+    expect(t).toEqual({
+      subtotalCents: 35_000_000,
+      descuentoCents: 0,
+      baseCents: 35_000_000,
+      ivaCents: 6_650_000,
+      totalCents: 41_650_000,
+    });
+  });
+
+  it("liquida el IVA sobre la base con descuento y lo exime en zona franca", () => {
+    // La cotización JT-8204-26: 2 × $325.000, IVA 19 %.
+    const items = [{ cantidadMilesimas: 2000, precioUnitarioCents: aCentavos(325000) }];
+    expect(totales(items, 19).totalCents).toBe(aCentavos(773500));
+    const conDcto = totales(items, 19, 10);
+    expect(conDcto.descuentoCents).toBe(aCentavos(65000));
+    expect(conDcto.baseCents).toBe(aCentavos(585000));
+    expect(conDcto.ivaCents).toBe(aCentavos(111150));
+    const franca = totales(items, 19, 0, true);
+    expect(franca.ivaCents).toBe(0);
+    expect(franca.totalCents).toBe(aCentavos(650000));
   });
 
   it("numera con ceros a la izquierda", () => {
