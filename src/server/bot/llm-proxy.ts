@@ -1,4 +1,5 @@
 import { apiRoot } from "@/lib/ai/presets";
+import { conPrivacidad } from "@/lib/ai/privacidad";
 import { resolveAiProvider } from "@/lib/ai/provider";
 import { marcarEstadoPorRespuesta } from "@/server/ai/credentials";
 
@@ -14,7 +15,8 @@ import { marcarEstadoPorRespuesta } from "@/server/ai/credentials";
  *
  * No interpreta el cuerpo: se reenvía como llegó. Entenderlo convertiría al
  * CRM en un mini-OpenRouter que hay que actualizar cada vez que un proveedor
- * agrega un campo.
+ * agrega un campo. La única excepción es la privacidad: con OpenRouter se
+ * fuerzan `provider.zdr` y `provider.data_collection` (`lib/ai/privacidad.ts`).
  *
  * Sin lista de modelos permitidos, a diferencia de cloud (spec 036, D4): allá
  * el cerebro puede ser de un tercero; aquí lo pone quien instala y entra con
@@ -60,7 +62,9 @@ export async function pensarPorElCerebro(input: {
         Authorization: `Bearer ${provider.token}`,
         "Content-Type": input.contentType ?? "application/json",
       },
-      body: input.cuerpoCrudo,
+      // Única excepción al «tal cual»: con OpenRouter se piden endpoints sin
+      // retención ni entrenamiento (ver `lib/ai/privacidad.ts`).
+      body: conPrivacidad(input.cuerpoCrudo, provider.baseUrl),
       signal: controller.signal,
     });
     const cuerpo = await res.text();

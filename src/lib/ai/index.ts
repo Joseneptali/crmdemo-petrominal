@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { chatCompletionsUrl } from "@/lib/ai/presets";
+import { preferenciasPara } from "@/lib/ai/privacidad";
 import {
   resolveAiProvider,
   type AiProvider,
@@ -172,7 +173,13 @@ async function callProvider(
         Authorization: `Bearer ${provider.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model, messages }),
+      // Con OpenRouter: solo endpoints sin retención ni entrenamiento
+      // (`lib/ai/privacidad.ts`). Con otro proveedor, `provider` no va.
+      body: JSON.stringify({
+        model,
+        messages,
+        provider: preferenciasPara(provider.baseUrl),
+      }),
       signal: controller.signal,
     });
     if (!res.ok) {

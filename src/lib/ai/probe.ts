@@ -1,4 +1,5 @@
 import { chatCompletionsUrl, modelsUrl } from "@/lib/ai/presets";
+import { preferenciasPara } from "@/lib/ai/privacidad";
 
 /**
  * Sonda del proveedor para Ajustes → IA: «Probar conexión» y «Traer modelos».
@@ -75,6 +76,10 @@ export async function probeProvider(input: {
         model: input.model,
         messages: [{ role: "user", content: "Responde solo: ok" }],
         max_tokens: 5,
+        // Las mismas preferencias de privacidad que el tráfico real: si el
+        // modelo no tiene endpoints sin retención, la prueba lo dice aquí y
+        // no el agente callado más tarde.
+        provider: preferenciasPara(input.baseUrl),
       }),
       signal: controller.signal,
     });
@@ -135,6 +140,16 @@ export function clasificarFallo(
       code: "no_credit",
       httpStatus: status,
       message: `La cuenta no tiene saldo (402)${detalle}`,
+    };
+  }
+  // Va antes del 404 de modelo: OpenRouter contesta 404 cuando el modelo
+  // existe pero ningún endpoint cumple la privacidad pedida (`privacidad.ts`).
+  if (/data policy|zero data retention|\bzdr\b/i.test(body)) {
+    return {
+      ok: false,
+      code: "provider_error",
+      httpStatus: status,
+      message: `Ningún proveedor de ese modelo cumple la privacidad pedida (sin retención ni entrenamiento con tus datos). Elige otro modelo o, bajo tu responsabilidad, apágala con OPENROUTER_PRIVACIDAD=off (${status})${detalle}`,
     };
   }
   if (status === 404 || (status === 400 && /model/i.test(body))) {
