@@ -92,6 +92,30 @@ describe("/api/bot/llm — el reenvío", () => {
     expect(await res.json()).toEqual({ choices: [{ message: { content: "hola!" } }] });
   });
 
+  it("con OpenRouter pide endpoints sin retención ni entrenamiento y conserva el resto del cuerpo", async () => {
+    resolveAiProvider.mockResolvedValue({
+      ok: true,
+      provider: { source: "org", baseUrl: "https://openrouter.ai/api", model: "m/uno", judgeModel: "m/uno", token: LLAVE_IA },
+    });
+    await peticion({ authorization: `Bearer ${LLAVE_BOT}` });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(JSON.parse(init.body as string)).toEqual({
+      ...JSON.parse(CUERPO),
+      provider: { zdr: true, data_collection: "deny" },
+    });
+  });
+
+  it("con OPENROUTER_PRIVACIDAD=off, el cuerpo a OpenRouter vuelve a ir tal cual", async () => {
+    vi.stubEnv("OPENROUTER_PRIVACIDAD", "off");
+    resolveAiProvider.mockResolvedValue({
+      ok: true,
+      provider: { source: "org", baseUrl: "https://openrouter.ai/api", model: "m/uno", judgeModel: "m/uno", token: LLAVE_IA },
+    });
+    await peticion({ authorization: `Bearer ${LLAVE_BOT}` });
+    expect((fetchMock.mock.calls[0] as [string, RequestInit])[1].body).toBe(CUERPO);
+  });
+
   it("el código del proveedor pasa tal cual (429)", async () => {
     fetchMock.mockResolvedValue(new Response('{"error":"lento"}', { status: 429 }));
     const res = await peticion({ authorization: `Bearer ${LLAVE_BOT}` });
