@@ -368,7 +368,15 @@ export function AiClient() {
               <Input
                 id="ai-token"
                 type="password"
-                autoComplete="off"
+                // `off` no basta: Chrome lo ignora en campos de contraseña y
+                // pegaba aquí la clave de acceso al CRM. «Probar conexión»
+                // usa lo escrito antes que la llave guardada, y «Guardar» la
+                // habría reemplazado. `new-password` sí lo respeta; los
+                // `data-*` lo piden a los gestores de contraseñas.
+                autoComplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
+                data-bwignore
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder={

@@ -111,7 +111,7 @@ export function MiCorreoCard() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="mc-clave">{correo ? "Nueva contraseña de aplicación (opcional)" : "Contraseña de aplicación"}</Label>
-            <Input id="mc-clave" type="password" autoComplete="off" value={form.clave} onChange={(e) => setForm({ ...form, clave: e.target.value })} />
+            <Input id="mc-clave" type="password" autoComplete="new-password" data-1p-ignore data-lpignore="true" data-bwignore value={form.clave} onChange={(e) => setForm({ ...form, clave: e.target.value })} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="mc-host">Servidor SMTP</Label>
