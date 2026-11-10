@@ -1,0 +1,49 @@
+$ drizzle-kit generate
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/home/runner/work/crmdemo-petrominal/crmdemo-petrominal/drizzle.config.ts'
+43 tables
+account 13 columns 0 indexes 1 fks
+ad_attribution 14 columns 3 indexes 4 fks
+agent_profile 12 columns 1 indexes 1 fks
+agent_test_case 10 columns 1 indexes 3 fks
+agent_test_run 7 columns 2 indexes 1 fks
+ai_credentials 14 columns 1 indexes 1 fks
+asesor_correo 14 columns 1 indexes 2 fks
+booking 18 columns 3 indexes 4 fks
+calendar_settings 12 columns 1 indexes 1 fks
+capi_settings 10 columns 1 indexes 2 fks
+contact 16 columns 3 indexes 2 fks
+conversation 15 columns 2 indexes 2 fks
+conversation_note 6 columns 1 indexes 3 fks
+conversion_event 10 columns 2 indexes 3 fks
+cotizacion 22 columns 2 indexes 3 fks
+cotizacion_item 11 columns 1 indexes 3 fks
+dispatch 13 columns 3 indexes 2 fks
+google_credentials 13 columns 1 indexes 1 fks
+instagram_credentials 16 columns 3 indexes 1 fks
+invitation 7 columns 0 indexes 2 fks
+kb_entry 8 columns 1 indexes 1 fks
+lead 12 columns 2 indexes 3 fks
+lead_stage_event 16 columns 3 indexes 6 fks
+media_asset 14 columns 2 indexes 1 fks
+member 5 columns 0 indexes 2 fks
+message 15 columns 1 indexes 3 fks
+messenger_credentials 16 columns 3 indexes 1 fks
+meta_credentials 13 columns 2 indexes 1 fks
+offered_slot 6 columns 1 indexes 2 fks
+organization 6 columns 0 indexes 0 fks
+petrominal_ajustes 11 columns 1 indexes 2 fks
+pipeline_stage 6 columns 1 indexes 1 fks
+producto 16 columns 2 indexes 2 fks
+quick_reply 6 columns 1 indexes 1 fks
+reunion 15 columns 2 indexes 3 fks
+session 9 columns 0 indexes 1 fks
+template 11 columns 1 indexes 1 fks
+tiktok_credentials 15 columns 2 indexes 1 fks
+user 7 columns 0 indexes 0 fks
+verification 6 columns 0 indexes 0 fks
+webhook_event 13 columns 3 indexes 1 fks
+zernio_whatsapp_credentials 14 columns 2 indexes 1 fks
+zoom_credentials 10 columns 1 indexes 1 fks
+
+No schema changes, nothing to migrate 😴

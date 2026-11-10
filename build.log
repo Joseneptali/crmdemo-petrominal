@@ -1,0 +1,188 @@
+$ next build
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 15.5.28
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 27.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/3) ...
+ ✓ Generating static pages (3/3)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                            Size  First Load JS
+┌ ƒ /                                                 431 B         103 kB
+├ ƒ /_not-found                                        1 kB         104 kB
+├ ƒ /agent                                          10.3 kB         123 kB
+├ ƒ /api/agent/brain-status                           431 B         103 kB
+├ ƒ /api/agent/profile                                431 B         103 kB
+├ ƒ /api/agent/profile/preset                         431 B         103 kB
+├ ƒ /api/ajustes-cliente                              431 B         103 kB
+├ ƒ /api/analytics/ads                                431 B         103 kB
+├ ƒ /api/analytics/bot                                431 B         103 kB
+├ ƒ /api/analytics/hygiene                            431 B         103 kB
+├ ƒ /api/analytics/sales                              431 B         103 kB
+├ ƒ /api/auth/[...all]                                431 B         103 kB
+├ ƒ /api/bookings                                     431 B         103 kB
+├ ƒ /api/bookings/[id]                                431 B         103 kB
+├ ƒ /api/bot/availability                             431 B         103 kB
+├ ƒ /api/bot/bookings                                 431 B         103 kB
+├ ƒ /api/bot/context                                  431 B         103 kB
+├ ƒ /api/bot/ficha                                    431 B         103 kB
+├ ƒ /api/bot/handoff                                  431 B         103 kB
+├ ƒ /api/bot/llm/[...ruta]                            431 B         103 kB
+├ ƒ /api/bot/media/[mediaId]                          431 B         103 kB
+├ ƒ /api/bot/messages                                 431 B         103 kB
+├ ○ /api/bot/openapi.json                             431 B         103 kB
+├ ƒ /api/bot/profile                                  431 B         103 kB
+├ ƒ /api/bot/reset                                    431 B         103 kB
+├ ƒ /api/bot/stage                                    431 B         103 kB
+├ ƒ /api/bot/typing                                   431 B         103 kB
+├ ƒ /api/branding/app-icon                            431 B         103 kB
+├ ƒ /api/branding/favicon                             431 B         103 kB
+├ ƒ /api/calendar/availability                        431 B         103 kB
+├ ƒ /api/calendar/settings                            431 B         103 kB
+├ ƒ /api/catalogo                                     431 B         103 kB
+├ ƒ /api/catalogo/[id]                                431 B         103 kB
+├ ƒ /api/catalogo/[id]/foto                           431 B         103 kB
+├ ƒ /api/catalogo/importar                            431 B         103 kB
+├ ƒ /api/contacts                                     431 B         103 kB
+├ ƒ /api/contacts/[id]                                431 B         103 kB
+├ ƒ /api/contacts/[id]/asesor                         431 B         103 kB
+├ ƒ /api/contacts/[id]/start-conversation             431 B         103 kB
+├ ƒ /api/contacts/import                              431 B         103 kB
+├ ƒ /api/conversations                                431 B         103 kB
+├ ƒ /api/conversations/[id]                           431 B         103 kB
+├ ƒ /api/conversations/[id]/eventos                   431 B         103 kB
+├ ƒ /api/conversations/[id]/messages                  431 B         103 kB
+├ ƒ /api/conversations/[id]/messages/forward          431 B         103 kB
+├ ƒ /api/conversations/[id]/messages/forward-image    431 B         103 kB
+├ ƒ /api/conversations/[id]/messages/media            431 B         103 kB
+├ ƒ /api/conversations/[id]/messages/template         431 B         103 kB
+├ ƒ /api/conversations/[id]/notes                     431 B         103 kB
+├ ƒ /api/conversations/[id]/notes/[noteId]            431 B         103 kB
+├ ƒ /api/cotizaciones                                 431 B         103 kB
+├ ƒ /api/cotizaciones/[id]                            431 B         103 kB
+├ ƒ /api/cotizaciones/[id]/enviar                     431 B         103 kB
+├ ƒ /api/cotizaciones/[id]/pdf                        431 B         103 kB
+├ ƒ /api/dev/ai-mock/chat/completions                 431 B         103 kB
+├ ƒ /api/dev/ai-mock/models                           431 B         103 kB
+├ ƒ /api/dev/ai-mock/v1/chat/completions              431 B         103 kB
+├ ƒ /api/dev/ai-mock/v1/models                        431 B         103 kB
+├ ƒ /api/dev/google-mock/[...path]                    431 B         103 kB
+├ ƒ /api/dev/wa-mock/capi-events                      431 B         103 kB
+├ ƒ /api/dev/wa-mock/cuenta-de-mensajes               431 B         103 kB
+├ ƒ /api/dev/wa-mock/echo                             431 B         103 kB
+├ ƒ /api/dev/wa-mock/embedded                         431 B         103 kB
+├ ƒ /api/dev/wa-mock/graph/[...path]                  431 B         103 kB
+├ ƒ /api/dev/wa-mock/inbound                          431 B         103 kB
+├ ƒ /api/dev/wa-mock/media-file/[id]                  431 B         103 kB
+├ ƒ /api/dev/wa-mock/outbox                           431 B         103 kB
+├ ƒ /api/dev/wa-mock/status                           431 B         103 kB
+├ ƒ /api/dev/wa-mock/template-status                  431 B         103 kB
+├ ƒ /api/dev/wa-mock/webhooks                         431 B         103 kB
+├ ƒ /api/dev/webhook-fallo                            431 B         103 kB
+├ ƒ /api/dev/zernio-mock/[...path]                    431 B         103 kB
+├ ƒ /api/dev/zoom-mock/[...path]                      431 B         103 kB
+├ ƒ /api/equipo                                       431 B         103 kB
+├ ƒ /api/events                                       431 B         103 kB
+├ ƒ /api/health                                       431 B         103 kB
+├ ƒ /api/horario                                      431 B         103 kB
+├ ƒ /api/informes                                     431 B         103 kB
+├ ƒ /api/informes/csv                                 431 B         103 kB
+├ ƒ /api/informes/pdf                                 431 B         103 kB
+├ ƒ /api/kb                                           431 B         103 kB
+├ ƒ /api/kb/[id]                                      431 B         103 kB
+├ ƒ /api/kb/size                                      431 B         103 kB
+├ ƒ /api/lab/runs                                     431 B         103 kB
+├ ƒ /api/lab/runs/[id]                                431 B         103 kB
+├ ƒ /api/lab/suggestions/apply                        431 B         103 kB
+├ ƒ /api/media/[assetId]                              431 B         103 kB
+├ ƒ /api/mi-correo                                    431 B         103 kB
+├ ƒ /api/mi-cuenta/clave                              431 B         103 kB
+├ ƒ /api/onboarding/status                            431 B         103 kB
+├ ƒ /api/pipeline/board                               431 B         103 kB
+├ ƒ /api/pipeline/leads/[id]                          431 B         103 kB
+├ ƒ /api/pipeline/stages                              431 B         103 kB
+├ ƒ /api/pipeline/stages/[id]                         431 B         103 kB
+├ ƒ /api/public/media/[assetId]                       431 B         103 kB
+├ ƒ /api/quick-replies                                431 B         103 kB
+├ ƒ /api/quick-replies/[id]                           431 B         103 kB
+├ ƒ /api/reuniones                                    431 B         103 kB
+├ ƒ /api/reuniones/[id]                               431 B         103 kB
+├ ƒ /api/seed/demo                                    431 B         103 kB
+├ ƒ /api/settings/ai                                  431 B         103 kB
+├ ƒ /api/settings/ai/models                           431 B         103 kB
+├ ƒ /api/settings/ai/test                             431 B         103 kB
+├ ƒ /api/settings/appearance                          431 B         103 kB
+├ ƒ /api/settings/branding                            431 B         103 kB
+├ ƒ /api/settings/branding/favicon                    431 B         103 kB
+├ ƒ /api/settings/capi                                431 B         103 kB
+├ ƒ /api/settings/capi/events                         431 B         103 kB
+├ ƒ /api/settings/channels                            431 B         103 kB
+├ ƒ /api/settings/google                              431 B         103 kB
+├ ƒ /api/settings/google/test                         431 B         103 kB
+├ ƒ /api/settings/instagram                           431 B         103 kB
+├ ƒ /api/settings/messenger                           431 B         103 kB
+├ ƒ /api/settings/team                                431 B         103 kB
+├ ƒ /api/settings/tiktok                              431 B         103 kB
+├ ƒ /api/settings/webhook                             431 B         103 kB
+├ ƒ /api/settings/webhook/eventos                     431 B         103 kB
+├ ƒ /api/settings/whatsapp                            431 B         103 kB
+├ ƒ /api/settings/whatsapp-zernio                     431 B         103 kB
+├ ƒ /api/settings/whatsapp/embedded                   431 B         103 kB
+├ ƒ /api/settings/whatsapp/test                       431 B         103 kB
+├ ƒ /api/settings/zoom                                431 B         103 kB
+├ ƒ /api/settings/zoom/test                           431 B         103 kB
+├ ƒ /api/templates                                    431 B         103 kB
+├ ƒ /api/templates/sync                               431 B         103 kB
+├ ƒ /api/webhooks/ig/[webhookToken]                   431 B         103 kB
+├ ƒ /api/webhooks/messenger/[webhookToken]            431 B         103 kB
+├ ƒ /api/webhooks/tiktok/[webhookToken]               431 B         103 kB
+├ ƒ /api/webhooks/wa/[webhookToken]                   431 B         103 kB
+├ ƒ /api/webhooks/zernio-wa/[webhookToken]            431 B         103 kB
+├ ƒ /bookings                                       17.7 kB         130 kB
+├ ƒ /catalogo                                       5.11 kB         114 kB
+├ ƒ /contacts                                       17.6 kB         157 kB
+├ ƒ /cotizaciones                                   2.19 kB         119 kB
+├ ƒ /cotizaciones/[id]                              7.19 kB         120 kB
+├ ƒ /cuenta                                         3.21 kB         113 kB
+├ ƒ /inbox                                          41.6 kB         162 kB
+├ ƒ /informes                                       5.82 kB         115 kB
+├ ƒ /lab                                            9.03 kB         122 kB
+├ ƒ /login                                          2.48 kB         129 kB
+├ ƒ /manifest.webmanifest                             431 B         103 kB
+├ ƒ /onboarding                                      4.5 kB         117 kB
+├ ƒ /pipeline                                       23.9 kB         140 kB
+├ ƒ /register                                       2.63 kB         129 kB
+├ ƒ /results                                          11 kB         124 kB
+├ ƒ /reuniones                                      3.23 kB         116 kB
+├ ƒ /settings                                         431 B         103 kB
+├ ƒ /settings/ads                                   4.02 kB         113 kB
+├ ƒ /settings/ai                                    5.41 kB         115 kB
+├ ƒ /settings/appearance                            4.54 kB         144 kB
+├ ƒ /settings/branding                              4.59 kB         176 kB
+├ ƒ /settings/calendar                               5.7 kB         115 kB
+├ ƒ /settings/channels                              7.04 kB         120 kB
+├ ƒ /settings/instagram                              3.3 kB         120 kB
+├ ƒ /settings/messenger                             3.22 kB         120 kB
+├ ƒ /settings/quick-replies                         4.48 kB         114 kB
+├ ƒ /settings/team                                  6.55 kB         116 kB
+├ ƒ /settings/templates                             9.99 kB         123 kB
+├ ƒ /settings/tiktok                                1.82 kB         118 kB
+└ ƒ /settings/whatsapp                              12.7 kB         149 kB
++ First Load JS shared by all                        103 kB
+  ├ chunks/2484-2e16d98da5fc07ff.js                 46.4 kB
+  ├ chunks/85d13d2b-2811bc9175d69504.js             54.2 kB
+  └ other shared chunks (total)                     1.93 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
