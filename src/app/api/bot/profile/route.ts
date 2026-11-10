@@ -10,7 +10,9 @@ export const dynamic = "force-dynamic";
 
 const INSTRUCCION_FICHA = `
 
-Datos del cliente: a un cliente nuevo pídele, con naturalidad y sin interrogarlo, su nombre, empresa, NIT, cargo, ciudad y correo electrónico, y lo que necesita. Guarda cada dato en la ficha del CRM en cuanto lo sepas, usando EXACTAMENTE estas claves (en minúscula, sin tildes): nombre, empresa, nit, cargo, ciudad, correo, telefono, producto, aplicacion, capacidad, cantidad, notas. Un dato por clave; el correo va solo en «correo», nunca dentro de «notas». En «notas» va únicamente lo que no encaje en las demás.`;
+Datos del prospecto: pídele, con naturalidad y de a poco (no todo en un mensaje), su nombre, empresa, cargo, ciudad y correo electrónico, y entiende su operación. Guarda cada dato en la ficha del CRM en cuanto lo sepas, usando EXACTAMENTE estas claves (en minúscula, sin tildes): nombre, empresa, nit, cargo, ciudad, correo, telefono, sector, asesores (cuántas personas atienden clientes), canales (WhatsApp, Instagram, Messenger), como_vende (cómo atienden hoy: celulares personales, chat compartido, otro CRM), interes (qué quiere resolver o ver), demo, horario_demo, notas. Un dato por clave; el correo va solo en «correo», nunca dentro de «notas».
+
+Demo: cuando el prospecto quiera una demo, guarda en la ficha demo: «solicitada» y en horario_demo los días y horas que prefiera, confírmale que el equipo de Syrtel Solutions lo contactará para agendarla y pasa la conversación a una persona con el motivo «demo». No agendes tú la fecha ni confirmes una hora.`;
 
 /**
  * Perfil del agente + knowledge base para un cerebro externo.

@@ -124,7 +124,12 @@ export async function fijarAdminPrincipal(organizationId: string, userId: string
 export async function asignarAsesor(
   organizationId: string,
   contactId: string,
-  asesorUserId: string | null
+  asesorUserId: string | null,
+  /**
+   * `presentar: false` no le envía al cliente el mensaje de presentación del
+   * asesor; `nota` reemplaza la nota interna por defecto.
+   */
+  opciones: { presentar?: boolean; nota?: string } = {}
 ): Promise<MiembroDto | null> {
   const asesor = asesorUserId ? await miembro(organizationId, asesorUserId) : null;
   if (asesorUserId && !asesor) {
@@ -156,9 +161,10 @@ export async function asignarAsesor(
     await notaDelSistema(
       organizationId,
       convs[0].id,
-      asesor ? `👤 Cliente asignado al asesor ${asesor.nombre}.` : "👤 Se quitó el asesor asignado a este cliente."
+      opciones.nota ??
+        (asesor ? `👤 Cliente asignado al asesor ${asesor.nombre}.` : "👤 Se quitó el asesor asignado a este cliente.")
     ).catch(() => {});
-    if (asesor && asesor.userId !== anterior) {
+    if (asesor && asesor.userId !== anterior && opciones.presentar !== false) {
       const [c] = await getDb()
         .select({ nombre: schema.contact.name, isTest: schema.conversation.isTest, channel: schema.conversation.channel })
         .from(schema.conversation)

@@ -5,7 +5,10 @@ import { apiError, parseBody } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { publish } from "@/server/events/bus";
 import { toHandoffReason } from "@/server/bot/handoff";
+import { pideDemo } from "@/server/bot/demo";
 import {
+  adminPrincipal,
+  asignarAsesor,
   contactoDeConversacion,
   destinoDeTransferencia,
   notaDelSistema,
@@ -28,6 +31,7 @@ async function destinoParaRespuesta(
 }
 
 export const dynamic = "force-dynamic";
+
 
 const bodySchema = z.object({
   conversationId: z.string().min(1),
@@ -93,7 +97,22 @@ export async function POST(req: Request) {
     // cliente es nuevo o no tiene asesor. Queda como nota interna en el hilo.
     try {
       const contactId = await contactoDeConversacion(organizationId, conv.id);
-      if (contactId) {
+      const [ficha] = contactId
+        ? await db
+            .select({ ficha: schema.contact.ficha })
+            .from(schema.contact)
+            .where(eq(schema.contact.id, contactId))
+            .limit(1)
+        : [];
+      const admin = contactId && pideDemo(body.data.reason, ficha?.ficha) ? await adminPrincipal(organizationId) : null;
+      if (contactId && admin) {
+        // Syrtel — una demo la agenda el administrador: el prospecto queda a
+        // su nombre, sin mensaje de presentación al cliente.
+        await asignarAsesor(organizationId, contactId, admin.userId, {
+          presentar: false,
+          nota: `🗓️ Solicitud de demo: la IA asignó este prospecto a ${admin.nombre} (administrador) para agendarla.`,
+        });
+      } else if (contactId) {
         const destino = await destinoDeTransferencia(organizationId, contactId);
         const quien = destino.miembro?.nombre ?? "el equipo";
         const texto =
