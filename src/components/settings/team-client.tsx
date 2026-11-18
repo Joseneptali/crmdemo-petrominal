@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { Trash2, UserPlus } from "lucide-react";
 import { ContactAvatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 
 type Member = {
   id: string;
+  userId: string;
   role: string;
   name: string;
   email: string;
@@ -27,13 +28,19 @@ export function TeamClient() {
   const [puedeGestionar, setPuedeGestionar] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [yo, setYo] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState<Member | null>(null);
+  const [reasignarA, setReasignarA] = useState("");
+  const [borrando, setBorrando] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
     const res = await fetch("/api/settings/team").catch(() => null);
     if (!res?.ok) return;
-    const data = (await res.json()) as { members: Member[]; puedeGestionar?: boolean };
+    const data = (await res.json()) as { members: Member[]; puedeGestionar?: boolean; yo?: string };
     setMembers(data.members);
     setPuedeGestionar(Boolean(data.puedeGestionar));
+    setYo(data.yo ?? null);
   }, []);
 
   async function cambiarRol(memberId: string, role: "member" | "admin") {
@@ -49,6 +56,38 @@ export function TeamClient() {
   useEffect(() => {
     void refetch();
   }, [refetch]);
+
+  /** Syrtel — quita al usuario del equipo; sus datos se quedan. */
+  async function eliminar() {
+    if (!eliminando) return;
+    setBorrando(true);
+    setError(null);
+    const res = await fetch("/api/settings/team", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ memberId: eliminando.id, reasignarA: reasignarA || null }),
+    }).catch(() => null);
+    setBorrando(false);
+    if (!res?.ok) {
+      const d = (await res?.json().catch(() => null)) as { error?: { message?: string } } | null;
+      setError(d?.error?.message ?? "No se pudo eliminar el usuario");
+      return;
+    }
+    const d = (await res.json()) as { clientes: number };
+    const destino = members.find((m) => m.userId === reasignarA)?.name;
+    setAviso(
+      `Se eliminó a ${eliminando.name}. ` +
+        (d.clientes === 0
+          ? "No tenía clientes asignados."
+          : destino
+            ? `Sus ${d.clientes} clientes pasaron a ${destino}.`
+            : `Sus ${d.clientes} clientes quedaron sin asesor.`) +
+        " Sus conversaciones, cotizaciones y reuniones se conservan."
+    );
+    setEliminando(null);
+    setReasignarA("");
+    void refetch();
+  }
 
   function generatePassword() {
     const alphabet =
@@ -168,11 +207,10 @@ export function TeamClient() {
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Miembros
         </p>
+        {aviso && <p className="text-sm text-emerald-600">{aviso}</p>}
         {members.map((m) => (
-          <div
-            key={m.id}
-            className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3"
-          >
+          <div key={m.id} className="rounded-lg border bg-card">
+          <div className="flex items-center gap-3 px-4 py-3">
             <ContactAvatar name={m.name} seed={m.id} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{m.name}</p>
@@ -193,6 +231,57 @@ export function TeamClient() {
                 {m.role === "owner" ? "Propietario" : m.role === "admin" ? "Administrador" : "Asesor"}
               </Badge>
             )}
+            {puedeGestionar && m.role !== "owner" && m.userId !== yo && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setEliminando(m);
+                  setReasignarA("");
+                  setAviso(null);
+                }}
+                aria-label={`Eliminar a ${m.name}`}
+                title="Eliminar usuario"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          {eliminando?.id === m.id && (
+            <div className="space-y-3 border-t bg-subtle px-4 py-3 text-sm">
+              <p>
+                <strong>¿Eliminar a {m.name}?</strong> Ya no podrá entrar al CRM. No se borra ningún dato: sus
+                conversaciones, notas, cotizaciones y reuniones se conservan con su nombre.
+              </p>
+              <label className="flex flex-wrap items-center gap-2">
+                <span>Sus clientes pasan a:</span>
+                <select
+                  className="h-8 rounded-md border bg-background px-2 text-sm"
+                  value={reasignarA}
+                  onChange={(e) => setReasignarA(e.target.value)}
+                  aria-label="Pasar sus clientes a"
+                >
+                  <option value="">Sin asesor (los atiende la administración)</option>
+                  {members
+                    .filter((o) => o.userId !== m.userId)
+                    .map((o) => (
+                      <option key={o.userId} value={o.userId}>
+                        {o.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {error && <p className="text-destructive">{error}</p>}
+              <div className="flex gap-2">
+                <Button size="sm" variant="destructive" onClick={() => void eliminar()} disabled={borrando}>
+                  {borrando ? "Eliminando…" : "Eliminar usuario"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEliminando(null)} disabled={borrando}>
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
           </div>
         ))}
       </div>
