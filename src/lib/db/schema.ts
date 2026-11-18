@@ -1612,9 +1612,8 @@ export const asesorCorreo = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    /** Syrtel — null = el correo de la IA (uno por organización, lo asegura el código). */
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
     host: text("host").notNull(),
     puerto: integer("puerto").notNull().default(465),
     seguro: boolean("seguro").notNull().default(true),

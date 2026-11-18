@@ -104,3 +104,17 @@ export function pidePrueba(valor: unknown): boolean {
 export function yaSalio(valor: unknown): boolean {
   return typeof valor === "string" && /^envi/.test(sinTildes(valor.trim()));
 }
+
+/**
+ * ¿La IA le acaba de prometer la cotización de ejemplo al prospecto? («ya va
+ * en camino», «se la envío», «le llega»…). Es el disparo que no depende de que
+ * el cerebro sepa escribir la clave `cotizacion_prueba` en la ficha.
+ */
+export function prometeCotizacionPrueba(texto: string): boolean {
+  const t = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (!/cotizacion (de )?(ejemplo|muestra|prueba)|cotizacion ficticia|pdf de (ejemplo|muestra)/.test(t)) return false;
+  // Todavía la está ofreciendo y pide datos («¿me confirma su correo?»): aún no.
+  if (/(correo|nombre|email)[^?]{0,60}\?/.test(t)) return false;
+  return /(en camino|ya va|le llega|le llegara|enviando|se la envi|se la mando|le envie|enviada|acabo de enviar|le envio|aqui (le )?va)/.test(t);
+}
+

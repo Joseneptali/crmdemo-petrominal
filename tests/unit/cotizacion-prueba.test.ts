@@ -40,3 +40,20 @@ describe("Syrtel — cotización de prueba", () => {
     }
   });
 });
+
+describe("Syrtel — la IA promete la cotización de ejemplo", () => {
+  it("dispara cuando la promesa es firme", async () => {
+    const { prometeCotizacionPrueba } = await import("@/lib/cotizacion-prueba");
+    expect(
+      prometeCotizacionPrueba("¡Listo, José! 😊 Su cotización de ejemplo ya va en camino — le llega por WhatsApp en unos segundos y al correo x@y.com.")
+    ).toBe(true);
+    expect(prometeCotizacionPrueba("Aquí le va la cotización de muestra de su clínica.")).toBe(true);
+  });
+  it("no dispara mientras la ofrece o pide datos", async () => {
+    const { prometeCotizacionPrueba } = await import("@/lib/cotizacion-prueba");
+    expect(
+      prometeCotizacionPrueba("¡Perfecto! Le envío ahora mismo una cotización de ejemplo de su clínica por este chat y a su correo. ¿Me confirma su nombre y su correo?")
+    ).toBe(false);
+    expect(prometeCotizacionPrueba("¿Le gustaría ver cómo se vería una cita de su clínica?")).toBe(false);
+  });
+});

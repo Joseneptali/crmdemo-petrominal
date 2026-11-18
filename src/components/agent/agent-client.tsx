@@ -8,6 +8,7 @@ import { externalDown, type BrainStatusDto } from "@/lib/brain-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MiCorreoCard } from "@/components/cotizaciones/mi-correo-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -218,6 +219,23 @@ export function AgentClient() {
         />
         <ProfileSection profile={profile} onSave={saveProfile} />
         <KbSection entries={entries} kbSize={kbSize} onChanged={() => void refetch()} />
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Correo de la IA</CardTitle>
+            <CardDescription>
+              El buzón desde el que el agente envía las cotizaciones de ejemplo a los prospectos. Si no lo
+              configuras, usa el correo del administrador principal.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MiCorreoCard
+              endpoint="/api/correo-ia"
+              titulo="Correo de la IA"
+              pista="sin configurar (usa el del administrador principal)"
+              nota="Usa un buzón de la empresa, por ejemplo ventas@ o info@. El nombre del remitente es el que verá el prospecto (por ejemplo «Asesor virtual — Syrtel Solutions»)."
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

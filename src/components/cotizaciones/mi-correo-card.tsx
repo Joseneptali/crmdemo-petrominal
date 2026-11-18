@@ -36,7 +36,18 @@ function proveedorDe(host: string): Proveedor {
  * invitaciones: Yahoo! Small Business, Google Workspace o cualquier servidor
  * SMTP. Yahoo y Google piden una contraseña de aplicación.
  */
-export function MiCorreoCard() {
+export function MiCorreoCard({
+  endpoint = "/api/mi-correo",
+  titulo = "Mi correo de envío",
+  pista = "sin configurar (necesario para enviar por correo)",
+  nota,
+}: {
+  /** Syrtel — la misma tarjeta sirve para el correo de la IA (`/api/correo-ia`). */
+  endpoint?: string;
+  titulo?: string;
+  pista?: string;
+  nota?: string;
+} = {}) {
   const [abierto, setAbierto] = useState(false);
   const [correo, setCorreo] = useState<Correo | null>(null);
   const [proveedor, setProveedor] = useState<Proveedor>("yahoo");
@@ -53,7 +64,7 @@ export function MiCorreoCard() {
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
-    void fetch("/api/mi-correo")
+    void fetch(endpoint)
       .then((r) => (r.ok ? (r.json() as Promise<{ correo: Correo | null }>) : null))
       .then((d) => {
         if (!d?.correo) return;
@@ -70,7 +81,7 @@ export function MiCorreoCard() {
         }));
       })
       .catch(() => null);
-  }, []);
+  }, [endpoint]);
 
   function elegirProveedor(p: Proveedor) {
     setProveedor(p);
@@ -94,7 +105,7 @@ export function MiCorreoCard() {
     setGuardando(true);
     setEstado(null);
     const puerto = Number(form.puerto) || (seguridad === "ssl" ? 465 : 587);
-    const res = await fetch("/api/mi-correo", {
+    const res = await fetch(endpoint, {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -128,14 +139,13 @@ export function MiCorreoCard() {
         onClick={() => setAbierto(!abierto)}
       >
         <Mail className="h-4 w-4" />
-        Mi correo de envío:{" "}
-        <span className={correo ? "text-text-2" : "text-amber-600"}>
-          {correo ? correo.usuario : "sin configurar (necesario para enviar por correo)"}
-        </span>
+        {titulo}:{" "}
+        <span className={correo ? "text-text-2" : "text-amber-600"}>{correo ? correo.usuario : pista}</span>
         <span className="ml-auto text-xs text-text-3">{abierto ? "Cerrar" : "Configurar"}</span>
       </button>
       {abierto && (
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {nota && <p className="text-sm sm:col-span-2">{nota}</p>}
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="mc-proveedor">Proveedor de correo</Label>
             <select

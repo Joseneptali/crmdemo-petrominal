@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
@@ -48,16 +48,24 @@ export type CorreoDto = {
 
 type Fila = typeof schema.asesorCorreo.$inferSelect;
 
-async function fila(organizationId: string, userId: string): Promise<Fila | null> {
+/**
+ * La cuenta de correo de un asesor (`userId`) o, con `null`, la de la IA: el
+ * buzón desde el que el asesor virtual envía las cotizaciones de ejemplo.
+ */
+function deQuien(userId: string | null) {
+  return userId === null ? isNull(schema.asesorCorreo.userId) : eq(schema.asesorCorreo.userId, userId);
+}
+
+async function fila(organizationId: string, userId: string | null): Promise<Fila | null> {
   const [f] = await getDb()
     .select()
     .from(schema.asesorCorreo)
-    .where(and(eq(schema.asesorCorreo.organizationId, organizationId), eq(schema.asesorCorreo.userId, userId)))
+    .where(and(eq(schema.asesorCorreo.organizationId, organizationId), deQuien(userId)))
     .limit(1);
   return f ?? null;
 }
 
-export async function miCorreo(organizationId: string, userId: string): Promise<CorreoDto | null> {
+export async function miCorreo(organizationId: string, userId: string | null): Promise<CorreoDto | null> {
   const f = await fila(organizationId, userId);
   if (!f) return null;
   return {
@@ -103,7 +111,7 @@ function traducirError(err: unknown): CorreoError {
 /** Guarda la configuración, comprobando antes que el servidor la acepta. */
 export async function guardarMiCorreo(
   organizationId: string,
-  userId: string,
+  userId: string | null,
   datos: z.infer<typeof correoSchema>
 ): Promise<CorreoDto> {
   const entrada = {
@@ -149,16 +157,16 @@ export async function guardarMiCorreo(
   return (await miCorreo(organizationId, userId))!;
 }
 
-export async function borrarMiCorreo(organizationId: string, userId: string): Promise<void> {
+export async function borrarMiCorreo(organizationId: string, userId: string | null): Promise<void> {
   await getDb()
     .delete(schema.asesorCorreo)
-    .where(and(eq(schema.asesorCorreo.organizationId, organizationId), eq(schema.asesorCorreo.userId, userId)));
+    .where(and(eq(schema.asesorCorreo.organizationId, organizationId), deQuien(userId)));
 }
 
 /** Envía un correo desde la cuenta del asesor. */
 export async function enviarCorreo(
   organizationId: string,
-  userId: string,
+  userId: string | null,
   mensaje: {
     para: string;
     asunto: string;
