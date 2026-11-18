@@ -6,6 +6,9 @@ import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { publish } from "@/server/events/bus";
 import { toHandoffReason } from "@/server/bot/handoff";
 import { pideDemo } from "@/server/bot/demo";
+import { upsertFicha } from "@/server/bot/ficha";
+import { yaSalio } from "@/lib/cotizacion-prueba";
+import { CLAVES, deFicha } from "@/server/cotizaciones";
 import {
   adminPrincipal,
   asignarAsesor,
@@ -112,6 +115,15 @@ export async function POST(req: Request) {
           presentar: false,
           nota: `🗓️ Solicitud de demo: la IA asignó este prospecto a ${admin.nombre} (administrador) para agendarla.`,
         });
+        // Antes de la demo, el prospecto se lleva la muestra: si la IA no le
+        // envió la cotización de prueba y ya tenemos su correo, sale ahora.
+        const f = (ficha?.ficha ?? {}) as Record<string, unknown>;
+        if (!yaSalio(f.cotizacion_prueba) && deFicha(f, CLAVES.correo)) {
+          await upsertFicha({ organizationId, contactId, ficha: { cotizacion_prueba: "enviando" } });
+          void import("@/server/cotizacion-prueba")
+            .then((m) => m.enviarCotizacionPrueba(organizationId, conv.id))
+            .catch((err) => console.error("[syrtel] cotización de prueba en la demo falló:", err));
+        }
       } else if (contactId) {
         const destino = await destinoDeTransferencia(organizationId, contactId);
         const quien = destino.miembro?.nombre ?? "el equipo";

@@ -76,6 +76,8 @@ function transporte(c: { host: string; puerto: number; seguro: boolean; usuario:
     host: c.host,
     port: c.puerto,
     secure: c.seguro,
+    // Sin SSL directo (587): exige STARTTLS para no mandar la clave en claro.
+    requireTLS: !c.seguro,
     auth: { user: c.usuario, pass: c.clave },
     connectionTimeout: 15_000,
     greetingTimeout: 15_000,
@@ -89,7 +91,7 @@ function traducirError(err: unknown): CorreoError {
     return new CorreoError(
       422,
       "auth",
-      "El servidor de correo rechazó el usuario o la contraseña. Usa una contraseña de aplicación generada en la seguridad de tu cuenta de Yahoo."
+      "El servidor de correo rechazó el usuario o la contraseña. En Yahoo y Google usa una contraseña de aplicación (no la de tu correo), generada en la seguridad de tu cuenta."
     );
   }
   if (e.code === "ETIMEDOUT" || e.code === "ECONNECTION" || e.code === "ESOCKET" || e.code === "ENOTFOUND") {
@@ -117,7 +119,7 @@ export async function guardarMiCorreo(
       : previa
         ? decryptSecret({ cipher: previa.claveCipher, iv: previa.claveIv, tag: previa.claveTag })
         : null;
-  if (!clave) throw new CorreoError(422, "clave", "Falta la contraseña de aplicación");
+  if (!clave) throw new CorreoError(422, "clave", "Falta la contraseña");
 
   try {
     await transporte({ ...entrada, clave }).verify();

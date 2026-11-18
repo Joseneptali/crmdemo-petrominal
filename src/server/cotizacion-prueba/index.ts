@@ -61,7 +61,10 @@ export async function enviarCotizacionPrueba(organizationId: string, conversatio
   const nombre = str(ficha.nombre) ?? fila.nombre ?? "Cliente";
   const empresa = deFicha(ficha, CLAVES.empresa);
   const correo = deFicha(ficha, CLAVES.correo);
-  const plantilla = plantillaPrueba(nichoDe([str(ficha.nicho), str(ficha.sector), str(ficha.interes)].filter(Boolean).join(" ")));
+  // El nicho que anotó la IA; si no usó la clave, se busca en toda la ficha.
+  const plantilla = plantillaPrueba(
+    nichoDe(str(ficha.nicho) ?? Object.values(ficha).filter((v): v is string => typeof v === "string").join(" "))
+  );
   const numero = `EJ-${Date.now().toString(36).slice(-5).toUpperCase()}`;
   const pdf = await generarPdfPrueba({ numero, fecha: new Date(), cliente: { nombre, empresa, correo }, plantilla });
   const archivo = `Cotizacion-ejemplo-Syrtel-CRM-${numero}.pdf`;

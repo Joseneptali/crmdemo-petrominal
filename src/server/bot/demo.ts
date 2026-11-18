@@ -6,9 +6,16 @@
 export function pideDemo(reason: string | undefined, ficha: unknown): boolean {
   if (reason && /demo/i.test(reason)) return true;
   if (!ficha || typeof ficha !== "object") return false;
-  const v = (ficha as Record<string, unknown>).demo;
+  const f = ficha as Record<string, unknown>;
+  const v = f.demo;
   if (v === true) return true;
-  if (typeof v !== "string") return false;
-  const t = v.trim().toLowerCase();
-  return t !== "" && !/^(no|false|ninguna|n\/a)$/.test(t);
+  if (typeof v === "string") {
+    const t = v.trim().toLowerCase();
+    if (t !== "" && !/^(no|false|ninguna|n\/a)$/.test(t)) return true;
+  }
+  // La IA no siempre usa la clave «demo»: a veces lo anota en las notas
+  // («Solicitó demo de 30 minutos»). Cuenta si alguna nota habla de pedirla.
+  return Object.values(f).some(
+    (x) => typeof x === "string" && /(solicit|pidi|quiere|agend|program|interesad)\w*[^.]{0,30}\bdemo/i.test(x) && !/\bno\s+(quiere|desea)[^.]{0,20}\bdemo/i.test(x)
+  );
 }

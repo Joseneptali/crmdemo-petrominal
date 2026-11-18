@@ -17,3 +17,12 @@ describe("Syrtel — solicitud de demo en el handoff", () => {
     expect(pideDemo(undefined, null)).toBe(false);
   });
 });
+
+describe("Syrtel — demo anotada en las notas", () => {
+  it("la detecta cuando la IA la escribió en otra clave", () => {
+    expect(pideDemo("modelo", { notas: "Contacto: José. Solicitó demo de 30 minutos." })).toBe(true);
+    expect(pideDemo(undefined, { resumen: "Quiere una demo el jueves" })).toBe(true);
+    expect(pideDemo(undefined, { notas: "No quiere demo por ahora" })).toBe(false);
+    expect(pideDemo(undefined, { notas: "Preguntó por precios" })).toBe(false);
+  });
+});
