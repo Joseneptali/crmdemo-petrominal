@@ -48,6 +48,14 @@ const prefixes = {
   cotizacionItem: "coti",
   asesorCorreo: "acor",
   reunion: "reu",
+  // Demo clínica oftalmológica
+  clinicaEspecialidad: "esp",
+  clinicaProfesional: "prof",
+  clinicaEps: "eps",
+  clinicaContrato: "ctr",
+  clinicaServicio: "srv",
+  clinicaPaciente: "pac",
+  clinicaCita: "cita",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

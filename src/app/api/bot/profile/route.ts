@@ -5,6 +5,8 @@ import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { serializeBotProfile, type BotLlm } from "@/server/bot/profile";
 import { fueraDeHorarioAhora, instruccionFueraDeHorario } from "@/server/horario";
 import { resolveAiProvider } from "@/lib/ai/provider";
+import { clinicaActiva } from "@/server/clinica";
+import { instruccionesClinica } from "@/server/clinica/instrucciones";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +74,11 @@ export async function GET(req: Request) {
 
   // Petrominal — la ficha del cliente con claves fijas: así la cotización y
   // las reuniones encuentran el correo, la empresa, el NIT y la ciudad.
+  // Demo clínica: en vez del guion de ventas de Syrtel, cómo se agenda en la clínica.
+  const clinica = await clinicaActiva(organizationId);
   const conFicha = {
     ...conHorario,
-    instructions: (conHorario.instructions ?? "") + INSTRUCCION_FICHA,
+    instructions: (conHorario.instructions ?? "") + (clinica ? await instruccionesClinica(organizationId) : INSTRUCCION_FICHA),
   };
 
   return Response.json(serializeBotProfile(conFicha, kb, llm));

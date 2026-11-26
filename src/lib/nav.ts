@@ -1,5 +1,6 @@
 import {
   CalendarClock,
+  Eye,
   CalendarDays,
   FileText,
   ChartColumn,
@@ -70,6 +71,8 @@ export function appNavGroups({
 }): NavGroup[] {
   const trabajo: NavItem[] = [
     { href: "/inbox", label: "Bandeja", icon: Inbox, badge: true },
+    // Demo clínica oftalmológica: agenda por especialidad, contratos y pacientes.
+    { href: "/clinica", label: "Clínica", icon: Eye },
     { href: "/pipeline", label: "Pipeline", icon: Kanban },
     { href: "/contacts", label: "Contactos", icon: Users },
     // Petrominal — el catálogo del cotizador.

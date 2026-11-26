@@ -12,6 +12,8 @@ import {
 import { getSettings } from "@/server/agenda/settings";
 import { armarHuecos, daysWithAgenda } from "@/server/agenda/spread";
 import { replaceOffers } from "@/server/agenda/offers";
+import { clinicaActiva } from "@/server/clinica";
+import { ofrecerHorarios } from "@/server/clinica/bot";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +98,12 @@ export async function GET(req: Request) {
   const limit = clamp(url.searchParams.get("limit"), LIMITS.limit);
   const perDay = clamp(url.searchParams.get("perDay"), LIMITS.perDay);
   const days = clamp(url.searchParams.get("days"), LIMITS.days);
+
+  // Demo clínica: los horarios salen de los profesionales de la especialidad
+  // que pidió el paciente, con el tope del contrato de su EPS.
+  if (await clinicaActiva(organizationId)) {
+    return Response.json(await ofrecerHorarios(organizationId, conversationId, { date, limit, perDay, days }));
+  }
 
   const settings = await getSettings(organizationId);
   const now = new Date();

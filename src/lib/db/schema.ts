@@ -1666,3 +1666,201 @@ export const reunion = pgTable(
     index("reunion_org_asesor_idx").on(t.organizationId, t.asesorUserId),
   ]
 );
+
+/* ============================================================
+ * Demo clínica oftalmológica — especialidades, profesionales,
+ * contratos con EPS (con tope mensual), pacientes y citas.
+ * Una cita suma el valor de su servicio al consumo del mes de su contrato;
+ * si se pasaría del tope, no se agenda en ese mes.
+ * ============================================================ */
+
+export const clinicaEspecialidad = pgTable(
+  "clinica_especialidad",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    nombre: text("nombre").notNull(),
+    descripcion: text("descripcion"),
+    /** Palabras con las que el paciente la nombra («catarata», «gafas»…), separadas por coma. */
+    palabras: text("palabras"),
+    orden: integer("orden").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("clinica_especialidad_org_nombre_uq").on(t.organizationId, t.nombre)]
+);
+
+export const clinicaProfesional = pgTable(
+  "clinica_profesional",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    nombre: text("nombre").notNull(),
+    /** oftalmologo | optometra */
+    tipo: text("tipo").notNull().default("oftalmologo"),
+    especialidadId: text("especialidad_id")
+      .notNull()
+      .references(() => clinicaEspecialidad.id, { onDelete: "restrict" }),
+    registro: text("registro"),
+    /** `{"mon":[{"start":"08:00","end":"12:00"}], …}` — hora de pared, Bogotá. */
+    horario: jsonb("horario").notNull(),
+    duracionMin: integer("duracion_min").notNull().default(20),
+    activo: boolean("activo").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("clinica_profesional_esp_idx").on(t.organizationId, t.especialidadId)]
+);
+
+export const clinicaEps = pgTable(
+  "clinica_eps",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    nombre: text("nombre").notNull(),
+    nit: text("nit"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("clinica_eps_org_nombre_uq").on(t.organizationId, t.nombre)]
+);
+
+export const clinicaContrato = pgTable(
+  "clinica_contrato",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    epsId: text("eps_id")
+      .notNull()
+      .references(() => clinicaEps.id, { onDelete: "cascade" }),
+    numero: text("numero").notNull(),
+    /** Tope mensual en pesos: la suma de las citas del mes no lo puede pasar. */
+    topeMensual: bigint("tope_mensual", { mode: "number" }).notNull(),
+    /** YYYY-MM-DD */
+    inicio: text("inicio").notNull(),
+    fin: text("fin").notNull(),
+    activo: boolean("activo").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("clinica_contrato_eps_idx").on(t.organizationId, t.epsId)]
+);
+
+export const clinicaServicio = pgTable(
+  "clinica_servicio",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    contratoId: text("contrato_id")
+      .notNull()
+      .references(() => clinicaContrato.id, { onDelete: "cascade" }),
+    especialidadId: text("especialidad_id")
+      .notNull()
+      .references(() => clinicaEspecialidad.id, { onDelete: "cascade" }),
+    codigo: text("codigo"),
+    nombre: text("nombre").notNull(),
+    /** primera_vez | control */
+    tipo: text("tipo").notNull().default("primera_vez"),
+    /** Valor pactado en pesos. */
+    valor: bigint("valor", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("clinica_servicio_contrato_idx").on(t.organizationId, t.contratoId)]
+);
+
+export const clinicaPaciente = pgTable(
+  "clinica_paciente",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    /** El contacto de WhatsApp, cuando el paciente escribe por ahí. */
+    contactId: text("contact_id").references(() => contact.id, { onDelete: "set null" }),
+    tipoDocumento: text("tipo_documento").notNull().default("CC"),
+    documento: text("documento"),
+    nombres: text("nombres").notNull(),
+    apellidos: text("apellidos"),
+    /** YYYY-MM-DD */
+    fechaNacimiento: text("fecha_nacimiento"),
+    sexo: text("sexo"),
+    telefono: text("telefono"),
+    correo: text("correo"),
+    epsId: text("eps_id").references(() => clinicaEps.id, { onDelete: "set null" }),
+    /** Datos de prueba de la demo. */
+    demo: boolean("demo").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("clinica_paciente_contact_idx").on(t.organizationId, t.contactId),
+    index("clinica_paciente_doc_idx").on(t.organizationId, t.documento),
+  ]
+);
+
+export const clinicaCita = pgTable(
+  "clinica_cita",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    pacienteId: text("paciente_id")
+      .notNull()
+      .references(() => clinicaPaciente.id, { onDelete: "cascade" }),
+    profesionalId: text("profesional_id")
+      .notNull()
+      .references(() => clinicaProfesional.id, { onDelete: "restrict" }),
+    especialidadId: text("especialidad_id")
+      .notNull()
+      .references(() => clinicaEspecialidad.id, { onDelete: "restrict" }),
+    servicioId: text("servicio_id").references(() => clinicaServicio.id, { onDelete: "set null" }),
+    contratoId: text("contrato_id").references(() => clinicaContrato.id, { onDelete: "set null" }),
+    inicio: timestamp("inicio").notNull(),
+    duracionMin: integer("duracion_min").notNull(),
+    /** Valor del servicio al agendar (suma al consumo del contrato). */
+    valor: bigint("valor", { mode: "number" }).notNull().default(0),
+    /** agendada | atendida | no_asistio | cancelada */
+    estado: text("estado").notNull().default("agendada"),
+    /** manual | ia */
+    origen: text("origen").notNull().default("manual"),
+    conversationId: text("conversation_id").references(() => conversation.id, { onDelete: "set null" }),
+    notas: text("notas"),
+    /** `{"24h": iso, "1h": iso}` cuando salió cada recordatorio. */
+    recordatorios: jsonb("recordatorios"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("clinica_cita_prof_inicio_uq")
+      .on(t.profesionalId, t.inicio)
+      .where(sql`${t.estado} <> 'cancelada'`),
+    index("clinica_cita_inicio_idx").on(t.organizationId, t.inicio),
+    index("clinica_cita_paciente_idx").on(t.organizationId, t.pacienteId),
+  ]
+);
+
+/** Lo último que la IA le ofreció a una conversación: especialidad y horarios con sus profesionales libres. */
+export const clinicaOferta = pgTable("clinica_oferta", {
+  conversationId: text("conversation_id")
+    .primaryKey()
+    .references(() => conversation.id, { onDelete: "cascade" }),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  especialidadId: text("especialidad_id").notNull(),
+  /** `[{ startUtc, profesionalIds: [] }]` */
+  slots: jsonb("slots").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

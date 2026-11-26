@@ -126,4 +126,21 @@ export function resumeWebhooks(): void {
   // Petrominal — recordatorios de reuniones (24 h y 1 h antes).
   iniciarRecordatorios();
   void pasadaDeRecordatorios();
+
+  // Demo clínica: recordatorios de cita y, con CLINICA_DEMO=1, los datos de prueba (una sola vez).
+  void import("@/server/clinica/recordatorios").then((m) => m.iniciarRecordatoriosClinica());
+  if (process.env.CLINICA_DEMO === "1") {
+    void (async () => {
+      try {
+        const { resolveInstanceOrg } = await import("@/server/bot/auth");
+        const org = await resolveInstanceOrg();
+        if (!org) return;
+        const { cargarDemoClinica } = await import("@/server/clinica/semilla");
+        const r = await cargarDemoClinica(org, { telefonoPrueba: process.env.CLINICA_DEMO_TELEFONO ?? null });
+        if (r.cargado) console.log(`[clinica] datos de demostración cargados (${r.citas} citas)`);
+      } catch (err) {
+        console.error("[clinica] no se pudieron cargar los datos de demostración:", err);
+      }
+    })();
+  }
 }

@@ -7,6 +7,7 @@ import { findContactByIdentity } from "@/server/inbox/identity";
 import { isWindowOpen, windowRemainingMs } from "@/server/inbox/window";
 import { windowMsFor } from "@/server/channels/capabilities";
 import { citasParaContexto } from "@/server/agenda/context";
+import { citasParaContexto as citasClinicaParaContexto, clinicaActiva } from "@/server/clinica";
 import { anuncioDelContacto } from "@/server/attribution/store";
 import { siguientesDelLead } from "@/server/bot/stage";
 
@@ -117,7 +118,10 @@ export async function GET(req: Request) {
         )
       )
       .limit(1),
-    citasParaContexto(organizationId, contact.id),
+    // Demo clínica: las citas del paciente con su especialidad y su profesional.
+    clinicaActiva(organizationId).then((activa) =>
+      activa ? citasClinicaParaContexto(organizationId, contact.id) : citasParaContexto(organizationId, contact.id)
+    ),
     anuncioDelContacto(organizationId, contact.id),
   ]);
   const nextStages = leadRows[0]
