@@ -38,6 +38,9 @@ const SETTINGS: CalendarSettings = {
 // Lunes 21 sep 2026, 09:00 CDMX.
 const NOW = new Date("2026-09-21T15:00:00.000Z");
 
+// Demo clínica apagada: esta prueba es de la agenda normal.
+vi.mock("@/server/clinica", () => ({ clinicaActiva: async () => false }));
+
 vi.mock("@/server/agenda/flag", () => ({
   agendaEnabled: () => true,
   agendaDisabledResponse: () => new Response(null, { status: 404 }),
