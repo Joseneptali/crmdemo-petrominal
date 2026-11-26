@@ -11,11 +11,12 @@ import { ESTADOS_CITA, ETIQUETA_ESTADO, fechaLarga, formatoPesosCO, ZONA_CLINICA
 type Especialidad = { id: string; nombre: string; descripcion: string | null };
 type Profesional = { id: string; nombre: string; tipo: string; especialidadId: string; registro: string | null; horario: Record<string, { start: string; end: string }[]>; duracionMin: number; activo: boolean };
 type Eps = { id: string; nombre: string; nit: string | null };
-type Servicio = { id: string; contratoId: string; especialidadId: string; codigo: string | null; nombre: string; tipo: string; valor: number };
+type Servicio = { id: string; contratoId: string; especialidadId: string; procedimientoId: string | null; codigo: string | null; nombre: string; tipo: string; valor: number };
+type Procedimiento = { id: string; nombre: string; codigo: string | null; tipo: string; especialidadId: string; duracionMin: number; profesionalIds: string[]; recomendacion: string | null; pdf: string | null };
 type Contrato = { id: string; epsId: string; numero: string; topeMensual: number; inicio: string; fin: string; activo: boolean; consumoMes: number; servicios: Servicio[] };
 type Paciente = { id: string; contactId: string | null; tipoDocumento: string; documento: string | null; nombres: string; apellidos: string | null; fechaNacimiento: string | null; telefono: string | null; correo: string | null; epsId: string | null; proximaCita: string | null; ultimaAtencion: string | null };
-type Cita = { id: string; pacienteId: string; profesionalId: string; especialidadId: string; servicioId: string | null; contratoId: string | null; inicio: string; duracionMin: number; valor: number; estado: EstadoCita; origen: string; notas: string | null };
-type Datos = { mes: string; hoy: string; puedeConfigurar: boolean; especialidades: Especialidad[]; profesionales: Profesional[]; eps: Eps[]; contratos: Contrato[]; pacientes: Paciente[]; citas: Cita[] };
+type Cita = { id: string; pacienteId: string; profesionalId: string; especialidadId: string; procedimientoId: string | null; servicioId: string | null; contratoId: string | null; inicio: string; duracionMin: number; valor: number; estado: EstadoCita; origen: string; notas: string | null };
+type Datos = { mes: string; hoy: string; puedeConfigurar: boolean; especialidades: Especialidad[]; procedimientos: Procedimiento[]; profesionales: Profesional[]; eps: Eps[]; contratos: Contrato[]; pacientes: Paciente[]; citas: Cita[] };
 type Hueco = { startUtc: string; label: string; profesionalIds: string[] };
 
 const PESTANAS = ["Agenda", "Contratos", "Pacientes", "Profesionales"] as const;
@@ -163,6 +164,7 @@ function Agenda({ datos, accion }: Props) {
   const pac = useMemo(() => new Map(datos.pacientes.map((p) => [p.id, p])), [datos.pacientes]);
   const prof = useMemo(() => new Map(datos.profesionales.map((p) => [p.id, p])), [datos.profesionales]);
   const esp = useMemo(() => new Map(datos.especialidades.map((e) => [e.id, e])), [datos.especialidades]);
+  const proc = useMemo(() => new Map(datos.procedimientos.map((x) => [x.id, x])), [datos.procedimientos]);
   const epsDe = useMemo(() => {
     const eps = new Map(datos.eps.map((e) => [e.id, e.nombre]));
     return new Map(datos.contratos.map((c) => [c.id, eps.get(c.epsId) ?? ""]));
@@ -224,7 +226,14 @@ function Agenda({ datos, accion }: Props) {
                         </span>
                       </span>
                       <span className="min-w-[12rem] flex-1 text-xs">
-                        {esp.get(c.especialidadId)?.nombre}
+                        {c.procedimientoId ? (
+                          <>
+                            <span className="mr-1 rounded bg-sky-500/10 px-1 text-[10px] text-sky-700">Examen</span>
+                            {proc.get(c.procedimientoId)?.nombre}
+                          </>
+                        ) : (
+                          `Consulta · ${esp.get(c.especialidadId)?.nombre ?? ""}`
+                        )}
                         <span className="block text-text-2">{prof.get(c.profesionalId)?.nombre}</span>
                       </span>
                       <span className="w-24 text-right font-mono text-xs">{formatoPesosCO(c.valor)}</span>
@@ -255,7 +264,10 @@ function Agenda({ datos, accion }: Props) {
 function NuevaCita({ datos, accion, onListo }: Props & { onListo: () => void }) {
   const [busca, setBusca] = useState("");
   const [pacienteId, setPacienteId] = useState("");
-  const [especialidadId, setEspecialidadId] = useState(datos.especialidades[0]?.id ?? "");
+  const consultables = datos.especialidades.filter((e) => !/ayudas diagn/i.test(e.nombre));
+  const [tipo, setTipo] = useState<"consulta" | "examen">("consulta");
+  const [especialidadId, setEspecialidadId] = useState(consultables[0]?.id ?? "");
+  const [procedimientoId, setProcedimientoId] = useState(datos.procedimientos[0]?.id ?? "");
   const [huecos, setHuecos] = useState<Hueco[] | null>(null);
   const [info, setInfo] = useState<{ valor: number; topeLleno: boolean } | null>(null);
   const [elegido, setElegido] = useState("");
@@ -265,23 +277,35 @@ function NuevaCita({ datos, accion, onListo }: Props & { onListo: () => void }) 
     `${p.nombres} ${p.apellidos ?? ""} ${p.documento ?? ""}`.toLowerCase().includes(busca.toLowerCase())
   );
 
+  const procElegido = datos.procedimientos.find((x) => x.id === procedimientoId);
+  const espConsulta = tipo === "examen" ? (procElegido?.especialidadId ?? "") : especialidadId;
+  const procConsulta = tipo === "examen" ? procedimientoId : "";
   useEffect(() => {
-    if (!pacienteId || !especialidadId) return;
+    if (!pacienteId || !espConsulta) return;
     setHuecos(null);
     setElegido("");
-    void fetch(`/api/clinica/disponibilidad?especialidadId=${especialidadId}&pacienteId=${pacienteId}`)
+    void fetch(
+      `/api/clinica/disponibilidad?especialidadId=${espConsulta}&pacienteId=${pacienteId}${procConsulta ? `&procedimientoId=${procConsulta}` : ""}`
+    )
       .then((r) => r.json())
       .then((d: { huecos: Hueco[]; valor: number; topeLleno: boolean }) => {
         setHuecos(d.huecos);
         setInfo({ valor: d.valor, topeLleno: d.topeLleno });
       })
       .catch(() => setHuecos([]));
-  }, [pacienteId, especialidadId]);
+  }, [pacienteId, espConsulta, procConsulta]);
 
   async function guardar() {
     const [startUtc, profesionalId] = elegido.split("|");
     setGuardando(true);
-    const ok = await accion({ accion: "crearCita", pacienteId, especialidadId, startUtc, profesionalId });
+    const ok = await accion({
+      accion: "crearCita",
+      pacienteId,
+      especialidadId: espConsulta,
+      procedimientoId: procConsulta || null,
+      startUtc,
+      profesionalId,
+    });
     setGuardando(false);
     if (ok) onListo();
   }
@@ -301,14 +325,31 @@ function NuevaCita({ datos, accion, onListo }: Props & { onListo: () => void }) 
         </select>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="nc-esp">Especialidad</Label>
-        <select id="nc-esp" className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={especialidadId} onChange={(e) => setEspecialidadId(e.target.value)}>
-          {datos.especialidades.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.nombre}
-            </option>
-          ))}
+        <Label htmlFor="nc-tipo">Tipo de cita</Label>
+        <select id="nc-tipo" className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={tipo} onChange={(e) => setTipo(e.target.value as "consulta" | "examen")}>
+          <option value="consulta">Consulta de especialidad</option>
+          <option value="examen" disabled={datos.procedimientos.length === 0}>
+            Examen o procedimiento
+          </option>
         </select>
+        {tipo === "consulta" ? (
+          <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={especialidadId} onChange={(e) => setEspecialidadId(e.target.value)} aria-label="Especialidad">
+            {consultables.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={procedimientoId} onChange={(e) => setProcedimientoId(e.target.value)} aria-label="Examen o procedimiento">
+            {datos.procedimientos.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.nombre} ({x.duracionMin} min)
+              </option>
+            ))}
+          </select>
+        )}
+        <p className="text-xs text-text-2">Al agendar, el paciente recibe por WhatsApp y correo la confirmación con las recomendaciones.</p>
         {info && (
           <p className="text-xs text-text-2">
             Valor del servicio: <strong>{formatoPesosCO(info.valor)}</strong>
@@ -449,7 +490,7 @@ function Contratos({ datos, accion }: Props) {
                   {c.servicios.map((s) => (
                     <tr key={s.id} className="border-b last:border-0">
                       <td className="py-1 font-mono text-xs">{s.codigo}</td>
-                      <td>{s.tipo === "control" ? "Control" : "Primera vez"}</td>
+                      <td>{s.procedimientoId ? s.nombre : s.tipo === "control" ? "Consulta de control" : "Consulta de primera vez"}</td>
                       <td className="text-xs">{esp.get(s.especialidadId)}</td>
                       <td className="text-right">
                         {datos.puedeConfigurar ? (
@@ -610,8 +651,40 @@ function Pacientes({ datos, accion }: Props) {
 
 function Profesionales({ datos }: { datos: Datos }) {
   const esp = new Map(datos.especialidades.map((e) => [e.id, e]));
+  const prof = new Map(datos.profesionales.map((p) => [p.id, p.nombre]));
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      {datos.procedimientos.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Exámenes y procedimientos</CardTitle>
+            <CardDescription>
+              Quién los realiza, cuánto duran y la preparación que recibe el paciente al agendar (con su guía en PDF).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y rounded-md border">
+              {datos.procedimientos.map((x) => (
+                <li key={x.id} className="space-y-1 px-3 py-2 text-sm">
+                  <p className="flex flex-wrap items-center gap-2">
+                    <strong>{x.nombre}</strong>
+                    <span className="text-xs text-text-2">
+                      {x.tipo === "procedimiento" ? "Procedimiento" : "Examen"} · {x.duracionMin} min · {esp.get(x.especialidadId)?.nombre}
+                    </span>
+                    {x.pdf && (
+                      <a className="text-xs text-primary underline" href={`/clinica-docs/recomendaciones/${x.pdf}`} target="_blank" rel="noreferrer">
+                        Guía de preparación (PDF)
+                      </a>
+                    )}
+                  </p>
+                  <p className="text-xs text-text-2">Lo realiza: {x.profesionalIds.map((id) => prof.get(id)).filter(Boolean).join(", ")}</p>
+                  {x.recomendacion && <p className="text-xs">{x.recomendacion.split("\n").join(" · ")}</p>}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
       {datos.especialidades.map((e) => {
         const suyos = datos.profesionales.filter((p) => p.especialidadId === e.id);
         return (
@@ -625,7 +698,7 @@ function Profesionales({ datos }: { datos: Datos }) {
               {suyos.map((p) => (
                 <div key={p.id} className="rounded-md border px-3 py-2 text-sm">
                   <p className="font-medium">
-                    {p.nombre} <span className="text-xs font-normal text-text-2">· {p.tipo === "optometra" ? "Optómetra" : "Oftalmólogo(a)"} · {p.registro}</span>
+                    {p.nombre} <span className="text-xs font-normal text-text-2">· {p.tipo === "optometra" ? "Optómetra" : p.tipo === "enfermeria" ? "Enfermería / técnico" : "Oftalmólogo(a)"} · {p.registro}</span>
                   </p>
                   <p className="text-xs text-text-2">
                     {Object.entries(p.horario)

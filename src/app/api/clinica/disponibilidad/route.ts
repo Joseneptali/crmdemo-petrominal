@@ -12,6 +12,7 @@ export const GET = withAuth(async (session, req: Request) => {
   const especialidadId = url.searchParams.get("especialidadId");
   const pacienteId = url.searchParams.get("pacienteId");
   const excluirCitaId = url.searchParams.get("excluirCitaId") ?? undefined;
+  const procedimientoId = url.searchParams.get("procedimientoId");
   if (!especialidadId) return apiError(422, "invalid_body", "Falta especialidadId");
   let epsId: string | null = null;
   if (pacienteId) {
@@ -22,6 +23,6 @@ export const GET = withAuth(async (session, req: Request) => {
       .limit(1);
     epsId = p?.epsId ?? null;
   }
-  const r = await disponibilidad(session.organizationId, { especialidadId, pacienteId, epsId, excluirCitaId });
+  const r = await disponibilidad(session.organizationId, { especialidadId, procedimientoId, pacienteId, epsId, excluirCitaId });
   return Response.json({ huecos: r.huecos.slice(0, 60), valor: r.valor, topeLleno: r.topeLleno, contratoId: r.contratoId });
 });

@@ -135,9 +135,11 @@ export function resumeWebhooks(): void {
         const { resolveInstanceOrg } = await import("@/server/bot/auth");
         const org = await resolveInstanceOrg();
         if (!org) return;
-        const { cargarDemoClinica } = await import("@/server/clinica/semilla");
+        const { cargarDemoClinica, cargarProcedimientos } = await import("@/server/clinica/semilla");
         const r = await cargarDemoClinica(org, { telefonoPrueba: process.env.CLINICA_DEMO_TELEFONO ?? null });
         if (r.cargado) console.log(`[clinica] datos de demostración cargados (${r.citas} citas)`);
+        const n = await cargarProcedimientos(org);
+        if (n > 0) console.log(`[clinica] ${n} exámenes y procedimientos cargados`);
       } catch (err) {
         console.error("[clinica] no se pudieron cargar los datos de demostración:", err);
       }

@@ -1754,6 +1754,37 @@ export const clinicaContrato = pgTable(
   (t) => [index("clinica_contrato_eps_idx").on(t.organizationId, t.epsId)]
 );
 
+/** Exámenes y procedimientos (angiografía, campo visual, láser…): quién los hace, cuánto duran y su preparación. */
+export const clinicaProcedimiento = pgTable(
+  "clinica_procedimiento",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    nombre: text("nombre").notNull(),
+    codigo: text("codigo"),
+    /** examen | procedimiento */
+    tipo: text("tipo").notNull().default("examen"),
+    /** El área que lo agrupa (la especialidad relacionada). */
+    especialidadId: text("especialidad_id")
+      .notNull()
+      .references(() => clinicaEspecialidad.id, { onDelete: "restrict" }),
+    duracionMin: integer("duracion_min").notNull(),
+    /** Quiénes lo realizan (enfermería o médicos): ids de clinica_profesional. */
+    profesionalIds: jsonb("profesional_ids").notNull(),
+    palabras: text("palabras"),
+    /** Resumen de la preparación para el mensaje al paciente. */
+    recomendacion: text("recomendacion"),
+    /** El PDF de la recomendación, en public/clinica-docs/recomendaciones. */
+    pdf: text("pdf"),
+    orden: integer("orden").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("clinica_procedimiento_org_nombre_uq").on(t.organizationId, t.nombre)]
+);
+
 export const clinicaServicio = pgTable(
   "clinica_servicio",
   {
@@ -1767,9 +1798,11 @@ export const clinicaServicio = pgTable(
     especialidadId: text("especialidad_id")
       .notNull()
       .references(() => clinicaEspecialidad.id, { onDelete: "cascade" }),
+    /** Si es un examen o procedimiento (no una consulta). */
+    procedimientoId: text("procedimiento_id").references(() => clinicaProcedimiento.id, { onDelete: "cascade" }),
     codigo: text("codigo"),
     nombre: text("nombre").notNull(),
-    /** primera_vez | control */
+    /** primera_vez | control | examen */
     tipo: text("tipo").notNull().default("primera_vez"),
     /** Valor pactado en pesos. */
     valor: bigint("valor", { mode: "number" }).notNull(),
@@ -1827,6 +1860,8 @@ export const clinicaCita = pgTable(
       .references(() => clinicaEspecialidad.id, { onDelete: "restrict" }),
     servicioId: text("servicio_id").references(() => clinicaServicio.id, { onDelete: "set null" }),
     contratoId: text("contrato_id").references(() => clinicaContrato.id, { onDelete: "set null" }),
+    /** Examen o procedimiento; null = consulta de la especialidad. */
+    procedimientoId: text("procedimiento_id").references(() => clinicaProcedimiento.id, { onDelete: "set null" }),
     inicio: timestamp("inicio").notNull(),
     duracionMin: integer("duracion_min").notNull(),
     /** Valor del servicio al agendar (suma al consumo del contrato). */
@@ -1839,6 +1874,8 @@ export const clinicaCita = pgTable(
     notas: text("notas"),
     /** `{"24h": iso, "1h": iso}` cuando salió cada recordatorio. */
     recordatorios: jsonb("recordatorios"),
+    /** Confirmación con recomendaciones al agendar: `{ whatsapp, correo, error }`. */
+    confirmacion: jsonb("confirmacion"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -1860,6 +1897,7 @@ export const clinicaOferta = pgTable("clinica_oferta", {
     .notNull()
     .references(() => organization.id, { onDelete: "cascade" }),
   especialidadId: text("especialidad_id").notNull(),
+  procedimientoId: text("procedimiento_id"),
   /** `[{ startUtc, profesionalIds: [] }]` */
   slots: jsonb("slots").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -8,7 +8,8 @@ import { newId } from "@/lib/db/ids";
 import { scoped } from "@/lib/db/tenant";
 import { dayIsoInTz } from "@/lib/time/slots";
 import { agendar, ClinicaError, consumoPorMes, rangoDeMes, reprogramar } from "@/server/clinica";
-import { cargarDemoClinica } from "@/server/clinica/semilla";
+import { enviarConfirmacionCita } from "@/server/clinica/confirmacion";
+import { cargarDemoClinica, cargarProcedimientos } from "@/server/clinica/semilla";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,11 @@ export const GET = withAuth(async (session, req: Request) => {
   if (!/^\d{4}-\d{2}$/.test(mes)) return apiError(422, "invalid_body", "mes debe ser YYYY-MM");
   const { desde, hasta } = rangoDeMes(mes);
 
+  const procedimientos = await db
+    .select()
+    .from(schema.clinicaProcedimiento)
+    .where(eq(schema.clinicaProcedimiento.organizationId, org))
+    .orderBy(asc(schema.clinicaProcedimiento.orden));
   const [especialidades, profesionales, eps, contratos, servicios, pacientes, citas] = await Promise.all([
     db.select().from(schema.clinicaEspecialidad).where(eq(schema.clinicaEspecialidad.organizationId, org)).orderBy(asc(schema.clinicaEspecialidad.orden)),
     db.select().from(schema.clinicaProfesional).where(eq(schema.clinicaProfesional.organizationId, org)).orderBy(asc(schema.clinicaProfesional.nombre)),
@@ -59,6 +65,7 @@ export const GET = withAuth(async (session, req: Request) => {
     hoy: dayIsoInTz(new Date(), ZONA_CLINICA),
     puedeConfigurar: veTodo(session.role),
     especialidades,
+    procedimientos,
     profesionales,
     eps,
     contratos: contratos.map((c, i) => ({
@@ -114,6 +121,7 @@ const accion = z.discriminatedUnion("accion", [
     accion: z.literal("crearCita"),
     pacienteId: z.string().min(1),
     especialidadId: z.string().min(1),
+    procedimientoId: z.string().nullable().optional(),
     startUtc: z.string().min(1),
     profesionalId: z.string().nullable().optional(),
     notas: z.string().max(500).optional(),
@@ -137,7 +145,8 @@ export const POST = withAuth(async (session, req: Request) => {
     switch (d.accion) {
       case "cargarDemo": {
         const r = await cargarDemoClinica(org);
-        return Response.json(r);
+        const p = await cargarProcedimientos(org);
+        return Response.json({ ...r, procedimientos: p });
       }
       case "crearEps": {
         const [e] = await db.insert(schema.clinicaEps).values({ id: newId("clinicaEps"), organizationId: org, nombre: d.nombre, nit: d.nit ?? null }).returning();
@@ -197,11 +206,13 @@ export const POST = withAuth(async (session, req: Request) => {
         const cita = await agendar(org, {
           pacienteId: d.pacienteId,
           especialidadId: d.especialidadId,
+          procedimientoId: d.procedimientoId ?? null,
           startUtc: d.startUtc,
           profesionalId: d.profesionalId ?? null,
           origen: "manual",
           notas: d.notas ?? null,
         });
+        void enviarConfirmacionCita(org, cita.id).catch((err) => console.error("[clinica] confirmación falló:", err));
         return Response.json({ cita });
       }
       case "estadoCita": {
@@ -214,6 +225,7 @@ export const POST = withAuth(async (session, req: Request) => {
       }
       case "moverCita": {
         const cita = await reprogramar(org, d.id, d.startUtc);
+        void enviarConfirmacionCita(org, cita.id, { motivo: "reprogramada" }).catch(() => {});
         return Response.json({ cita });
       }
     }

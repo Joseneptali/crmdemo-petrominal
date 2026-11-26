@@ -7,10 +7,10 @@ import {
   agendar,
   ClinicaError,
   disponibilidad,
-  especialidadDeConversacion,
   etiquetaDeCita,
   pacienteDeConversacion,
   proximaCitaDelContacto,
+  queAgendar,
   reprogramar,
 } from "@/server/clinica";
 
@@ -25,11 +25,12 @@ import {
 type Opciones = { date: string | null; limit: number; perDay: number; days: number };
 
 export async function ofrecerHorarios(organizationId: string, conversationId: string, o: Opciones, now = new Date()) {
-  const esp = await especialidadDeConversacion(organizationId, conversationId);
+  const { especialidad: esp, procedimiento: proc } = await queAgendar(organizationId, conversationId);
   if (!esp) return { slots: [], diasConAgenda: [], query: null, especialidad: null };
   const paciente = await pacienteDeConversacion(organizationId, conversationId);
   const disp = await disponibilidad(organizationId, {
     especialidadId: esp.id,
+    procedimientoId: proc?.id ?? null,
     pacienteId: paciente?.id ?? null,
     epsId: paciente?.epsId ?? null,
     now,
@@ -60,14 +61,18 @@ export async function ofrecerHorarios(organizationId: string, conversationId: st
     const ofrecidos = slots.map((s) => ({ startUtc: s.startUtc, profesionalIds: porInicio.get(s.startUtc)?.profesionalIds ?? [] }));
     await getDb()
       .insert(schema.clinicaOferta)
-      .values({ conversationId, organizationId, especialidadId: esp.id, slots: ofrecidos })
+      .values({ conversationId, organizationId, especialidadId: esp.id, procedimientoId: proc?.id ?? null, slots: ofrecidos })
       .onConflictDoUpdate({
         target: schema.clinicaOferta.conversationId,
-        set: { especialidadId: esp.id, slots: ofrecidos, updatedAt: new Date() },
+        set: { especialidadId: esp.id, procedimientoId: proc?.id ?? null, slots: ofrecidos, updatedAt: new Date() },
       });
   }
 
-  const avisos: string[] = [`Horarios de ${esp.nombre}.`];
+  const avisos: string[] = [
+    proc
+      ? `Horarios para ${proc.tipo === "procedimiento" ? "el procedimiento" : "el examen"} «${proc.nombre}» (dura ${proc.duracionMin} minutos).`
+      : `Horarios de consulta de ${esp.nombre}.`,
+  ];
   if (disp.topeLleno) {
     avisos.push(
       `El contrato de la EPS del paciente ya completó su cupo de ${mesDe(now)}: estos horarios son del mes siguiente. Explícaselo con amabilidad.`
@@ -85,7 +90,7 @@ export async function ofrecerHorarios(organizationId: string, conversationId: st
     })),
     diasConAgenda: daysWithAgenda(slots),
     query,
-    especialidad: esp.nombre,
+    especialidad: proc?.nombre ?? esp.nombre,
     aviso: avisos.join(" "),
   };
 }
@@ -135,12 +140,17 @@ export async function reservarHorario(organizationId: string, conversationId: st
     const cita = await agendar(organizationId, {
       pacienteId: paciente.id,
       especialidadId: of.especialidadId,
+      procedimientoId: of.procedimientoId,
       startUtc: inst.toISOString(),
       profesionalId: ofrecido.profesionalIds[0] ?? null,
       origen: "ia",
       conversationId,
     });
     await getDb().delete(schema.clinicaOferta).where(eq(schema.clinicaOferta.conversationId, conversationId));
+    // La confirmación con el logo y las recomendaciones sale aparte: la IA no la espera.
+    void import("@/server/clinica/confirmacion")
+      .then((m) => m.enviarConfirmacionCita(organizationId, cita.id, { conversationId }))
+      .catch((err) => console.error("[clinica] confirmación de cita falló:", err));
     return Response.json(
       { bookingId: cita.id, meetingLink: null, linkPending: false, label: await etiquetaDeCita(organizationId, cita.id) },
       { status: 201 }
@@ -164,6 +174,9 @@ export async function moverCita(organizationId: string, conversationId: string, 
   }
   try {
     const movida = await reprogramar(organizationId, cita.id, inst.toISOString());
+    void import("@/server/clinica/confirmacion")
+      .then((m) => m.enviarConfirmacionCita(organizationId, movida.id, { conversationId, motivo: "reprogramada" }))
+      .catch((err) => console.error("[clinica] confirmación de cita movida falló:", err));
     return Response.json({ bookingId: movida.id, meetingLink: null, linkPending: false, label: await etiquetaDeCita(organizationId, movida.id) });
   } catch (err) {
     if (err instanceof ClinicaError) return error("slot_taken", err.message, await reofrecer(organizationId, conversationId));

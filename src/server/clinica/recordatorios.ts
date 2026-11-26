@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { fechaLarga } from "@/lib/clinica";
 import { notaDelSistema } from "@/server/asesores";
@@ -30,12 +30,13 @@ export async function pasadaRecordatoriosClinica(ahora = new Date()): Promise<nu
         cita: schema.clinicaCita,
         contactId: schema.clinicaPaciente.contactId,
         nombre: schema.clinicaPaciente.nombres,
-        esp: schema.clinicaEspecialidad.nombre,
+        esp: sql<string>`coalesce(${schema.clinicaProcedimiento.nombre}, ${schema.clinicaEspecialidad.nombre})`,
         prof: schema.clinicaProfesional.nombre,
       })
       .from(schema.clinicaCita)
       .innerJoin(schema.clinicaPaciente, eq(schema.clinicaCita.pacienteId, schema.clinicaPaciente.id))
       .innerJoin(schema.clinicaEspecialidad, eq(schema.clinicaCita.especialidadId, schema.clinicaEspecialidad.id))
+      .leftJoin(schema.clinicaProcedimiento, eq(schema.clinicaCita.procedimientoId, schema.clinicaProcedimiento.id))
       .innerJoin(schema.clinicaProfesional, eq(schema.clinicaCita.profesionalId, schema.clinicaProfesional.id))
       .where(
         and(
@@ -73,8 +74,21 @@ export async function pasadaRecordatoriosClinica(ahora = new Date()): Promise<nu
             `📅 ${fechaLarga(cita.inicio)}\n🩺 ${esp} con ${prof}\n\n` +
             `Llegue 15 minutos antes con su documento de identidad y su orden. Si no puede asistir, respóndanos por aquí para reprogramarla.`;
           try {
-            const { sendText } = await import("@/server/inbox/send");
-            await sendText({ conversationId: conv.id, organizationId: cita.organizationId, text: texto });
+            const { sendMediaMessage, sendText } = await import("@/server/inbox/send");
+            // Con el logo de la clínica; si la imagen no se puede leer, solo el texto.
+            const logo = await import("node:fs/promises")
+              .then((fs) => fs.readFile(`${process.cwd()}/public/clinica-docs/logo-unidad-laser.jpg`))
+              .catch(() => null);
+            if (logo) {
+              await sendMediaMessage({
+                conversationId: conv.id,
+                organizationId: cita.organizationId,
+                file: { data: logo, mimeType: "image/jpeg", fileName: "unidad-laser.jpg" },
+                caption: texto,
+              });
+            } else {
+              await sendText({ conversationId: conv.id, organizationId: cita.organizationId, text: texto });
+            }
             hechos[toca.clave] = new Date().toISOString();
             enviados++;
           } catch (err) {

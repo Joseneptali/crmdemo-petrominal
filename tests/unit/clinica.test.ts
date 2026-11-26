@@ -76,3 +76,26 @@ describe("demo clínica — documento en el chat", () => {
     expect(documentoEnTexto("mi celular 3001234567")).toBeNull();
   });
 });
+
+describe("demo clínica — exámenes y procedimientos", () => {
+  it("cada examen tiene su PDF de recomendación en public/", async () => {
+    const { existsSync } = await import("node:fs");
+    const { PROCEDIMIENTOS_DEMO, CARPETA_RECOMENDACIONES, LOGO_CLINICA } = await import("@/lib/clinica-procedimientos");
+    expect(PROCEDIMIENTOS_DEMO).toHaveLength(17);
+    expect(new Set(PROCEDIMIENTOS_DEMO.map((p) => p.nombre)).size).toBe(17);
+    for (const p of PROCEDIMIENTOS_DEMO) {
+      expect(existsSync(`public/${CARPETA_RECOMENDACIONES}/${p.pdf}`)).toBe(true);
+      expect(p.recomendacion.length).toBeGreaterThan(0);
+    }
+    expect(existsSync(`public/${LOGO_CLINICA}`)).toBe(true);
+  });
+
+  it("reconoce el examen que le mandaron (la angiotomografía no es la tomografía)", async () => {
+    const { PROCEDIMIENTOS_DEMO } = await import("@/lib/clinica-procedimientos");
+    const procs = PROCEDIMIENTOS_DEMO.map((p) => ({ id: p.nombre, nombre: p.nombre, palabras: p.palabras }));
+    expect(reconocerEspecialidad(["me mandaron una angiotomografía del ojo"], procs)).toBe("Angiotomografía (OCT angiografía)");
+    expect(reconocerEspecialidad(["tengo orden para tomografía óptica"], procs)).toBe("Tomografía óptica coherente (OCT)");
+    expect(reconocerEspecialidad(["necesito el campo visual"], procs)).toBe("Campo visual computarizado");
+    expect(reconocerEspecialidad(["quiero cita con el oftalmólogo"], procs)).toBeNull();
+  });
+});

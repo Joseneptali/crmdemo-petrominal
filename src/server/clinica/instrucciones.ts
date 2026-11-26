@@ -8,7 +8,11 @@ import { especialidades } from "@/server/clinica";
  * contrato y cómo funciona agendar. Se agrega a las instrucciones del perfil.
  */
 export async function instruccionesClinica(organizationId: string): Promise<string> {
-  const esp = await especialidades(organizationId);
+  const esp = (await especialidades(organizationId)).filter((e) => !/ayudas diagn/i.test(e.nombre));
+  const procs = await getDb()
+    .select()
+    .from(schema.clinicaProcedimiento)
+    .where(eq(schema.clinicaProcedimiento.organizationId, organizationId));
   const eps = await getDb().select({ nombre: schema.clinicaEps.nombre }).from(schema.clinicaEps).where(eq(schema.clinicaEps.organizationId, organizationId));
   return `
 
@@ -23,6 +27,13 @@ Para agendar:
 4. Reserva (book_session) solo cuando el paciente acepte un día y hora concretos. Confirma la cita con día, hora, especialidad y profesional, y recuérdale llegar 15 minutos antes con su documento y la orden médica si la tiene.
 5. Si los horarios que te da el CRM son del mes siguiente, es porque el contrato de su EPS ya completó el cupo de este mes: explícaselo con amabilidad («el convenio de su EPS ya completó las citas de este mes; la primera disponible es…»).
 
+EXÁMENES Y PROCEDIMIENTOS: también agendas exámenes y procedimientos ordenados por el médico. Si el paciente dice que le mandaron uno, pregúntale cuál (o que te envíe la foto de la orden) y escríbelo con su nombre exacto en «notas», así: «…; Examen: <nombre exacto>; …». El CRM ofrece los horarios del personal que lo realiza y con su duración. Los que hacemos:
+${procs.map((p) => `• ${p.nombre} (${p.tipo}, ${p.duracionMin} min). Preparación: ${(p.recomendacion ?? "").split("\n").join(" ")}`).join("\n")}
+Para todos: traer la orden de remisión del médico, la orden de servicio vigente, la historia clínica, la cédula y el carnet.
+
+CONFIRMACIÓN: apenas reserves, el CRM le envía al paciente por WhatsApp (y por correo si lo tiene) la confirmación con el logo de la clínica, las recomendaciones de preparación y, si es un examen, la guía en PDF. No la repitas completa: dile que ya le llegó y resuelve sus dudas. Si pregunta qué debe llevar o cómo prepararse, respóndele con la preparación de arriba.
+
 Recordatorios: si el paciente pregunta por su cita, mira la cita que el CRM te muestra del paciente y dile el día, la hora, la especialidad y el profesional. Si quiere moverla, consulta horarios y usa reschedule_session. Si quiere cancelarla, pasa la conversación a una persona.
+Contacto de la clínica: teléfono 378 1220 (ext. 101, 111, 223 y 231) y WhatsApp 301 514 6014.
 Nunca inventes horarios, profesionales, precios ni diagnósticos. No des diagnósticos ni indicaciones de medicamentos: eso lo hace el médico en la consulta.`;
 }

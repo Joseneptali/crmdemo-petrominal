@@ -56,6 +56,7 @@ const prefixes = {
   clinicaServicio: "srv",
   clinicaPaciente: "pac",
   clinicaCita: "cita",
+  clinicaProcedimiento: "proc",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

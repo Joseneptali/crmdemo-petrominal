@@ -22,7 +22,7 @@ import { generarPdfPrueba } from "./pdf";
  * Quién envía el correo: `{ de: null }` = el correo de la IA; si no está, el
  * administrador principal o el último correo configurado. `undefined` = nadie.
  */
-async function remitente(organizationId: string): Promise<{ de: string | null } | undefined> {
+export async function remitente(organizationId: string): Promise<{ de: string | null } | undefined> {
   const db = getDb();
   const [ia] = await db
     .select({ id: schema.asesorCorreo.id })

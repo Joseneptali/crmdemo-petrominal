@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { scoped } from "@/lib/db/tenant";
@@ -96,10 +96,26 @@ async function servicioPara(
   organizationId: string,
   contratoId: string | null,
   especialidadId: string,
-  pacienteId: string | null
+  pacienteId: string | null,
+  procedimientoId: string | null = null
 ) {
   if (!contratoId) return null;
   const db = getDb();
+  if (procedimientoId) {
+    const [s] = await db
+      .select()
+      .from(schema.clinicaServicio)
+      .where(
+        scoped(
+          schema.clinicaServicio.organizationId,
+          organizationId,
+          eq(schema.clinicaServicio.contratoId, contratoId),
+          eq(schema.clinicaServicio.procedimientoId, procedimientoId)
+        )
+      )
+      .limit(1);
+    return s ?? null;
+  }
   let tipo = "primera_vez";
   if (pacienteId) {
     const [previa] = await db
@@ -111,6 +127,7 @@ async function servicioPara(
           organizationId,
           eq(schema.clinicaCita.pacienteId, pacienteId),
           eq(schema.clinicaCita.especialidadId, especialidadId),
+          isNull(schema.clinicaCita.procedimientoId),
           ne(schema.clinicaCita.estado, "cancelada")
         )
       )
@@ -125,32 +142,59 @@ async function servicioPara(
         schema.clinicaServicio.organizationId,
         organizationId,
         eq(schema.clinicaServicio.contratoId, contratoId),
-        eq(schema.clinicaServicio.especialidadId, especialidadId)
+        eq(schema.clinicaServicio.especialidadId, especialidadId),
+        isNull(schema.clinicaServicio.procedimientoId)
       )
     );
   return servicios.find((s) => s.tipo === tipo) ?? servicios[0] ?? null;
 }
 
+export async function procedimientoPorId(organizationId: string, id: string | null | undefined) {
+  if (!id) return null;
+  const [p] = await getDb()
+    .select()
+    .from(schema.clinicaProcedimiento)
+    .where(scoped(schema.clinicaProcedimiento.organizationId, organizationId, eq(schema.clinicaProcedimiento.id, id)))
+    .limit(1);
+  return p ?? null;
+}
+
 /** Huecos de una especialidad para un paciente (con el tope de su contrato). */
 export async function disponibilidad(
   organizationId: string,
-  opts: { especialidadId: string; pacienteId: string | null; epsId: string | null; now?: Date; fromISO?: string; toISO?: string; excluirCitaId?: string }
+  opts: {
+    especialidadId: string;
+    /** Examen o procedimiento: lo hacen sus profesionales (enfermería o médicos) y dura lo suyo. */
+    procedimientoId?: string | null;
+    pacienteId: string | null;
+    epsId: string | null;
+    now?: Date;
+    fromISO?: string;
+    toISO?: string;
+    excluirCitaId?: string;
+  }
 ): Promise<{ huecos: HuecoClinica[]; contratoId: string | null; servicioId: string | null; valor: number; topeLleno: boolean }> {
   const db = getDb();
   const now = opts.now ?? new Date();
   const desde = opts.fromISO ?? dayIsoInTz(now, ZONA_CLINICA);
   const hasta = opts.toISO ?? addDaysISO(desde, DIAS_HORIZONTE);
-  const profesionales = await db
-    .select()
-    .from(schema.clinicaProfesional)
-    .where(
-      scoped(
-        schema.clinicaProfesional.organizationId,
-        organizationId,
-        eq(schema.clinicaProfesional.especialidadId, opts.especialidadId),
-        eq(schema.clinicaProfesional.activo, true)
+  const proc = await procedimientoPorId(organizationId, opts.procedimientoId);
+  const quienes = proc ? ((proc.profesionalIds as string[] | null) ?? []) : null;
+  const profesionales = (
+    await db
+      .select()
+      .from(schema.clinicaProfesional)
+      .where(
+        scoped(
+          schema.clinicaProfesional.organizationId,
+          organizationId,
+          quienes
+            ? inArray(schema.clinicaProfesional.id, quienes.length ? quienes : ["-"])
+            : eq(schema.clinicaProfesional.especialidadId, opts.especialidadId),
+          eq(schema.clinicaProfesional.activo, true)
+        )
       )
-    );
+  ).map((p) => (proc ? { ...p, duracionMin: proc.duracionMin } : p));
   if (profesionales.length === 0) return { huecos: [], contratoId: null, servicioId: null, valor: 0, topeLleno: false };
 
   const ocupadasFilas = await db
@@ -182,7 +226,7 @@ export async function disponibilidad(
     }));
 
   const contrato = await contratoDeEps(organizationId, opts.epsId);
-  const servicio = await servicioPara(organizationId, contrato?.id ?? null, opts.especialidadId, opts.pacienteId);
+  const servicio = await servicioPara(organizationId, contrato?.id ?? null, opts.especialidadId, opts.pacienteId, proc?.id ?? null);
   const valor = servicio?.valor ?? 0;
   let consumo: Record<string, number> = {};
   if (contrato && servicio) {
@@ -215,6 +259,7 @@ export async function agendar(
   input: {
     pacienteId: string;
     especialidadId: string;
+    procedimientoId?: string | null;
     startUtc: string;
     profesionalId?: string | null;
     origen: "manual" | "ia";
@@ -230,9 +275,12 @@ export async function agendar(
     .where(scoped(schema.clinicaPaciente.organizationId, organizationId, eq(schema.clinicaPaciente.id, input.pacienteId)))
     .limit(1);
   if (!paciente) throw new ClinicaError("not_found", "Paciente no encontrado");
+  const proc = await procedimientoPorId(organizationId, input.procedimientoId);
+  const especialidadId = proc?.especialidadId ?? input.especialidadId;
   const dia = dayIsoInTz(new Date(input.startUtc), ZONA_CLINICA);
   const disp = await disponibilidad(organizationId, {
-    especialidadId: input.especialidadId,
+    especialidadId,
+    procedimientoId: proc?.id ?? null,
     pacienteId: paciente.id,
     epsId: paciente.epsId,
     now: input.now,
@@ -261,11 +309,12 @@ export async function agendar(
         organizationId,
         pacienteId: paciente.id,
         profesionalId,
-        especialidadId: input.especialidadId,
+        especialidadId,
+        procedimientoId: proc?.id ?? null,
         servicioId: disp.servicioId,
         contratoId: disp.servicioId ? disp.contratoId : null,
         inicio: new Date(hueco.startUtc),
-        duracionMin: prof?.duracionMin ?? 20,
+        duracionMin: proc?.duracionMin ?? prof?.duracionMin ?? 20,
         valor: disp.valor,
         estado: "agendada",
         origen: input.origen,
@@ -293,6 +342,7 @@ export async function reprogramar(organizationId: string, citaId: string, startU
   const dia = dayIsoInTz(new Date(startUtc), ZONA_CLINICA);
   const disp = await disponibilidad(organizationId, {
     especialidadId: cita.especialidadId,
+    procedimientoId: cita.procedimientoId,
     pacienteId: null,
     epsId: paciente?.epsId ?? null,
     now,
@@ -356,14 +406,38 @@ async function textosDeConversacion(organizationId: string, conversationId: stri
   };
 }
 
+/**
+ * Qué quiere agendar el paciente: un examen o procedimiento si lo nombra
+ * («me mandaron una angiografía»), si no la especialidad que nombra; sin
+ * ninguna, lo de su próxima cita (quien quiere moverla no la repite) y, por
+ * último, oftalmología general.
+ */
+export async function queAgendar(organizationId: string, conversationId: string) {
+  const db = getDb();
+  const esp = await especialidades(organizationId);
+  const procs = await db
+    .select()
+    .from(schema.clinicaProcedimiento)
+    .where(eq(schema.clinicaProcedimiento.organizationId, organizationId));
+  const datos = await textosDeConversacion(organizationId, conversationId);
+  const textos = datos?.textos ?? [];
+  const procId = reconocerEspecialidad(textos, procs);
+  const proc = procs.find((p) => p.id === procId) ?? null;
+  if (proc) return { especialidad: esp.find((e) => e.id === proc.especialidadId) ?? null, procedimiento: proc };
+  let espId = reconocerEspecialidad(textos, esp);
+  let procedimiento: (typeof procs)[number] | null = null;
+  if (!espId && datos) {
+    const prox = await proximaCitaDelContacto(organizationId, datos.contactId);
+    espId = prox?.especialidadId ?? null;
+    procedimiento = procs.find((p) => p.id === prox?.procedimientoId) ?? null;
+  }
+  const especialidad = esp.find((e) => e.id === espId) ?? esp.find((e) => /general/i.test(e.nombre)) ?? esp[0] ?? null;
+  return { especialidad, procedimiento };
+}
+
 /** La especialidad que pide el paciente en esta conversación (defecto: oftalmología general). */
 export async function especialidadDeConversacion(organizationId: string, conversationId: string) {
-  const esp = await especialidades(organizationId);
-  const datos = await textosDeConversacion(organizationId, conversationId);
-  let id = datos ? reconocerEspecialidad(datos.textos, esp) : null;
-  // Sin especialidad nombrada: la de su próxima cita (quien quiere moverla no la repite).
-  if (!id && datos) id = (await proximaCitaDelContacto(organizationId, datos.contactId))?.especialidadId ?? null;
-  return esp.find((e) => e.id === id) ?? esp.find((e) => /general/i.test(e.nombre)) ?? esp[0] ?? null;
+  return (await queAgendar(organizationId, conversationId)).especialidad;
 }
 
 /**
@@ -431,9 +505,10 @@ export async function pacienteDeConversacion(organizationId: string, conversatio
 export async function etiquetaDeCita(organizationId: string, citaId: string): Promise<string> {
   const db = getDb();
   const [f] = await db
-    .select({ inicio: schema.clinicaCita.inicio, esp: schema.clinicaEspecialidad.nombre, prof: schema.clinicaProfesional.nombre })
+    .select({ inicio: schema.clinicaCita.inicio, esp: sql<string>`coalesce(${schema.clinicaProcedimiento.nombre}, ${schema.clinicaEspecialidad.nombre})`, prof: schema.clinicaProfesional.nombre })
     .from(schema.clinicaCita)
     .innerJoin(schema.clinicaEspecialidad, eq(schema.clinicaCita.especialidadId, schema.clinicaEspecialidad.id))
+    .leftJoin(schema.clinicaProcedimiento, eq(schema.clinicaCita.procedimientoId, schema.clinicaProcedimiento.id))
     .innerJoin(schema.clinicaProfesional, eq(schema.clinicaCita.profesionalId, schema.clinicaProfesional.id))
     .where(and(eq(schema.clinicaCita.organizationId, organizationId), eq(schema.clinicaCita.id, citaId)))
     .limit(1);
@@ -459,11 +534,12 @@ export async function citasParaContexto(organizationId: string, contactId: strin
       duracionMin: schema.clinicaCita.duracionMin,
       estado: schema.clinicaCita.estado,
       updatedAt: schema.clinicaCita.updatedAt,
-      esp: schema.clinicaEspecialidad.nombre,
+      esp: sql<string>`coalesce(${schema.clinicaProcedimiento.nombre}, ${schema.clinicaEspecialidad.nombre})`,
       prof: schema.clinicaProfesional.nombre,
     })
     .from(schema.clinicaCita)
     .innerJoin(schema.clinicaEspecialidad, eq(schema.clinicaCita.especialidadId, schema.clinicaEspecialidad.id))
+    .leftJoin(schema.clinicaProcedimiento, eq(schema.clinicaCita.procedimientoId, schema.clinicaProcedimiento.id))
     .innerJoin(schema.clinicaProfesional, eq(schema.clinicaCita.profesionalId, schema.clinicaProfesional.id))
     .where(
       and(

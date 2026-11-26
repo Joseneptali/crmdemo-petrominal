@@ -261,3 +261,103 @@ export async function cargarDemoClinica(
 
   return { cargado: true, citas };
 }
+
+/* ---------- Exámenes y procedimientos (con enfermería) ---------- */
+
+const ENFERMERIA: { nombre: string; registro: string; horario: Horario }[] = [
+  { nombre: "Enf. Laura Mendoza Pérez", registro: "RN 08-4410", horario: { mon: [M("07:00", "12:00"), M("13:00", "17:00")], tue: [M("07:00", "12:00"), M("13:00", "17:00")], wed: [M("07:00", "12:00"), M("13:00", "17:00")], thu: [M("07:00", "12:00"), M("13:00", "17:00")], fri: [M("07:00", "12:00"), M("13:00", "17:00")] } },
+  { nombre: "Enf. Katherine Ortiz Llanos", registro: "RN 08-4537", horario: { mon: [M("08:00", "12:00")], wed: [M("08:00", "12:00")], fri: [M("08:00", "12:00")], sat: [M("07:00", "12:00")] } },
+  { nombre: "Tec. Yesica Padilla Royero", registro: "TO 08-0981", horario: { tue: [M("13:00", "18:00")], thu: [M("13:00", "18:00")], sat: [M("07:00", "12:00")] } },
+];
+
+/**
+ * Carga los exámenes y procedimientos (con su preparación y su PDF), el
+ * personal de enfermería que los hace y su valor en cada contrato. Una sola
+ * vez: si ya hay procedimientos, no hace nada.
+ */
+export async function cargarProcedimientos(organizationId: string): Promise<number> {
+  const { PROCEDIMIENTOS_DEMO } = await import("@/lib/clinica-procedimientos");
+  const db = getDb();
+  const ya = await db
+    .select({ id: schema.clinicaProcedimiento.id })
+    .from(schema.clinicaProcedimiento)
+    .where(eq(schema.clinicaProcedimiento.organizationId, organizationId))
+    .limit(1);
+  if (ya.length > 0) return 0;
+  const esps = await db.select().from(schema.clinicaEspecialidad).where(eq(schema.clinicaEspecialidad.organizationId, organizationId));
+  if (esps.length === 0) return 0;
+  const espId = new Map(esps.map((e) => [e.nombre, e.id]));
+
+  // El área de ayudas diagnósticas, con su enfermería.
+  let areaDx = espId.get("Ayudas diagnósticas y procedimientos");
+  if (!areaDx) {
+    areaDx = newId("clinicaEspecialidad");
+    await db.insert(schema.clinicaEspecialidad).values({
+      id: areaDx,
+      organizationId,
+      nombre: "Ayudas diagnósticas y procedimientos",
+      descripcion: "Exámenes y procedimientos ordenados por el médico; los realiza enfermería o el especialista.",
+      palabras: null,
+      orden: 99,
+    });
+  }
+  const enfermeria = ENFERMERIA.map((e) => ({ ...e, id: newId("clinicaProfesional") }));
+  await db.insert(schema.clinicaProfesional).values(
+    enfermeria.map((e) => ({
+      id: e.id,
+      organizationId,
+      nombre: e.nombre,
+      tipo: "enfermeria",
+      especialidadId: areaDx!,
+      registro: e.registro,
+      horario: e.horario,
+      duracionMin: 15,
+    }))
+  );
+  const profs = await db.select().from(schema.clinicaProfesional).where(eq(schema.clinicaProfesional.organizationId, organizationId));
+  const contratos = await db
+    .select({ id: schema.clinicaContrato.id, eps: schema.clinicaEps.nombre })
+    .from(schema.clinicaContrato)
+    .innerJoin(schema.clinicaEps, eq(schema.clinicaContrato.epsId, schema.clinicaEps.id))
+    .where(eq(schema.clinicaContrato.organizationId, organizationId));
+  const factor = (eps: string) => EPS.find((e) => e.nombre === eps)?.factor ?? 1;
+
+  for (const [i, p] of PROCEDIMIENTOS_DEMO.entries()) {
+    const area = espId.get(p.area) ?? areaDx;
+    const quienes =
+      p.ejecutor === "enfermeria"
+        ? enfermeria.map((e) => e.id)
+        : profs.filter((x) => x.especialidadId === espId.get(p.ejecutor) && x.tipo !== "enfermeria").map((x) => x.id);
+    const id = newId("clinicaProcedimiento");
+    await db.insert(schema.clinicaProcedimiento).values({
+      id,
+      organizationId,
+      nombre: p.nombre,
+      codigo: p.codigo,
+      tipo: p.tipo,
+      especialidadId: area,
+      duracionMin: p.duracionMin,
+      profesionalIds: quienes,
+      palabras: p.palabras,
+      recomendacion: p.recomendacion.join("\n"),
+      pdf: p.pdf,
+      orden: i,
+    });
+    if (contratos.length > 0) {
+      await db.insert(schema.clinicaServicio).values(
+        contratos.map((c) => ({
+          id: newId("clinicaServicio"),
+          organizationId,
+          contratoId: c.id,
+          especialidadId: area,
+          procedimientoId: id,
+          codigo: p.codigo,
+          nombre: p.nombre,
+          tipo: "examen",
+          valor: Math.round((p.valor * factor(c.eps)) / 1000) * 1000,
+        }))
+      );
+    }
+  }
+  return PROCEDIMIENTOS_DEMO.length;
+}
