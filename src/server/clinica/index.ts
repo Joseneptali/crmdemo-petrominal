@@ -320,7 +320,13 @@ const ultimos10 = (t: string | null | undefined) => soloDigitos(t).slice(-10);
 async function textosDeConversacion(organizationId: string, conversationId: string) {
   const db = getDb();
   const [conv] = await db
-    .select({ contactId: schema.conversation.contactId, ficha: schema.contact.ficha, nombre: schema.contact.name, telefono: schema.contact.phone })
+    .select({
+      contactId: schema.conversation.contactId,
+      isTest: schema.conversation.isTest,
+      ficha: schema.contact.ficha,
+      nombre: schema.contact.name,
+      telefono: schema.contact.phone,
+    })
     .from(schema.conversation)
     .innerJoin(schema.contact, eq(schema.conversation.contactId, schema.contact.id))
     .where(and(eq(schema.conversation.organizationId, organizationId), eq(schema.conversation.id, conversationId)))
@@ -342,6 +348,7 @@ async function textosDeConversacion(organizationId: string, conversationId: stri
   const textosFicha = Object.values(ficha).filter((v): v is string => typeof v === "string");
   return {
     contactId: conv.contactId,
+    isTest: conv.isTest,
     nombre: conv.nombre,
     telefono: conv.telefono,
     // La ficha la escribe la IA con lo último que entendió: va primero.
@@ -399,6 +406,8 @@ export async function pacienteDeConversacion(organizationId: string, conversatio
     return paciente;
   }
 
+  // Una conversación del Laboratorio no crea pacientes de verdad.
+  if (datos.isTest) return null;
   const [nombres, ...resto] = (datos.nombre ?? "Paciente").trim().split(/\s+/);
   const [nuevo] = await db
     .insert(schema.clinicaPaciente)

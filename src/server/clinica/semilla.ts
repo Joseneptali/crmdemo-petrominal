@@ -59,7 +59,7 @@ const TARIFAS: Record<string, [number, number]> = {
 /** EPS inventadas. Vida Plena tiene un tope bajo para mostrar el tope en la demo. */
 const EPS = [
   { nombre: "EPS Bienestar Caribe", nit: "900.111.222-1", numero: "CT-2026-014", tope: 5_000_000, factor: 1 },
-  { nombre: "EPS Vida Plena", nit: "900.333.444-5", numero: "CT-2026-022", tope: 300_000, factor: 0.95 },
+  { nombre: "EPS Vida Plena", nit: "900.333.444-5", numero: "CT-2026-022", tope: 350_000, factor: 0.95 },
   { nombre: "EPS Horizonte Salud", nit: "900.555.666-9", numero: "CT-2026-031", tope: 8_000_000, factor: 1.1 },
 ];
 

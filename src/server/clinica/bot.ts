@@ -116,7 +116,21 @@ export async function reservarHorario(organizationId: string, conversationId: st
     return error("slot_not_offered", "Ese horario no se le ofreció: consulta los horarios primero", await reofrecer(organizationId, conversationId));
   }
   const paciente = await pacienteDeConversacion(organizationId, conversationId);
-  if (!paciente) return error("not_found", "Conversación no encontrada", [], 404);
+  if (!paciente) {
+    // Laboratorio (paciente simulado): la reserva se simula, la agenda real no se toca.
+    const [conv] = await getDb()
+      .select({ isTest: schema.conversation.isTest })
+      .from(schema.conversation)
+      .where(eq(schema.conversation.id, conversationId))
+      .limit(1);
+    if (conv?.isTest) {
+      return Response.json(
+        { bookingId: "prueba", meetingLink: null, linkPending: false, label: `${inst.toISOString()} (cita de prueba del Laboratorio, no se guardó)` },
+        { status: 201 }
+      );
+    }
+    return error("not_found", "Conversación no encontrada", [], 404);
+  }
   try {
     const cita = await agendar(organizationId, {
       pacienteId: paciente.id,
