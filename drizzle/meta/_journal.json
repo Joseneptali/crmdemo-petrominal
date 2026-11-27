@@ -267,6 +267,13 @@
       "when": 1795708616056,
       "tag": "0037_nasty_skaar",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795801545797,
+      "tag": "0038_goofy_star_brand",
+      "breakpoints": true
     }
   ]
 }
