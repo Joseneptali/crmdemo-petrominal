@@ -5,8 +5,7 @@ import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { serializeBotProfile, type BotLlm } from "@/server/bot/profile";
 import { fueraDeHorarioAhora, instruccionFueraDeHorario } from "@/server/horario";
 import { resolveAiProvider } from "@/lib/ai/provider";
-import { clinicaActiva } from "@/server/clinica";
-import { instruccionesClinica } from "@/server/clinica/instrucciones";
+import { modoSyrtel } from "@/server/modo";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +16,17 @@ Ficha del prospecto: anota en la ficha del CRM lo que vayas sabiendo, sin interr
 Cotización de prueba: cuando el prospecto muestre interés en cotizaciones (o quiera ver algo concreto), ofrécele una cotización de ejemplo de su tipo de negocio. Si acepta, asegúrate de tener su nombre, su correo y su nicho en la ficha y guarda cotizacion_prueba: «solicitada». El CRM la arma y se la envía por WhatsApp y por correo en unos segundos; dile que ya va en camino. Es un ejemplo con productos ficticios: nunca lleva el precio de Syrtel CRM. Sale una sola vez por prospecto; si pide otra, ofrécele la demo.
 
 Autonomía y demo: atiendes TODA la conversación tú solo, sin pasarla a una persona, hasta que el prospecto quiera definitivamente la demo. Entonces guarda demo: «solicitada» y en horario_demo los días y horas que prefiera, confírmale que el equipo de Syrtel Solutions lo contactará para agendarla y pasa la conversación a una persona con el motivo «demo». No confirmes tú una fecha ni una hora. La única otra razón para pasarla antes es que pida expresamente hablar con una persona.`;
+
+/**
+ * Petrominal — la ficha del cliente. La herramienta de ficha del cerebro tiene
+ * campos fijos, así que los datos de contacto van en «notas» con etiquetas:
+ * el CRM las lee para la cotización (empresa, NIT, ciudad, correo).
+ */
+const INSTRUCCION_PETROMINAL = `
+
+Ficha del cliente: guarda lo que vayas sabiendo con la herramienta de ficha. Usa «rubro» para el sector (petrolero, minero, naval, construcción, industrial u otro), «rol» para el cargo y «dolor_principal» para lo que necesita (producto, capacidad, longitud, cantidad y uso). En «notas» escribe SIEMPRE una línea con los datos de contacto, con estas etiquetas: «Nombre: <nombre completo>; Empresa: <empresa>; NIT: <nit>; Ciudad: <ciudad>; Correo: <correo>; Teléfono: <teléfono>; Producto: <lo que necesita>; Cantidad: <cantidad>». Actualiza esa línea completa cada vez que sepas un dato nuevo: el CRM la usa para armar la cotización.
+
+Asesores: el CRM sabe a qué asesor pertenece cada cliente. Cuando pases la conversación a una persona, al cliente con asesor le llega SU asesor, y el cliente nuevo le llega al jefe de los asesores, que decide a quién asignarlo. Por eso, a un cliente nuevo pídele sus datos (de a poco, con amabilidad) y guárdalos ANTES de pasar la conversación.`;
 
 /**
  * Perfil del agente + knowledge base para un cerebro externo.
@@ -74,11 +84,9 @@ export async function GET(req: Request) {
 
   // Petrominal — la ficha del cliente con claves fijas: así la cotización y
   // las reuniones encuentran el correo, la empresa, el NIT y la ciudad.
-  // Demo clínica: en vez del guion de ventas de Syrtel, cómo se agenda en la clínica.
-  const clinica = await clinicaActiva(organizationId);
   const conFicha = {
     ...conHorario,
-    instructions: (conHorario.instructions ?? "") + (clinica ? await instruccionesClinica(organizationId) : INSTRUCCION_FICHA),
+    instructions: (conHorario.instructions ?? "") + (modoSyrtel() ? INSTRUCCION_FICHA : INSTRUCCION_PETROMINAL),
   };
 
   return Response.json(serializeBotProfile(conFicha, kb, llm));

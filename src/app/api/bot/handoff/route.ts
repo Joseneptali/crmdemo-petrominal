@@ -6,6 +6,7 @@ import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { publish } from "@/server/events/bus";
 import { toHandoffReason } from "@/server/bot/handoff";
 import { pideDemo } from "@/server/bot/demo";
+import { modoSyrtel } from "@/server/modo";
 import { upsertFicha } from "@/server/bot/ficha";
 import { yaSalio } from "@/lib/cotizacion-prueba";
 import { CLAVES, deFicha } from "@/server/cotizaciones";
@@ -16,6 +17,7 @@ import {
   destinoDeTransferencia,
   notaDelSistema,
   presentarAsesorAlCliente,
+  reconocerCliente,
 } from "@/server/asesores";
 
 /** Petrominal — a quién quedó la conversación, para el cerebro (informativo). */
@@ -107,7 +109,7 @@ export async function POST(req: Request) {
             .where(eq(schema.contact.id, contactId))
             .limit(1)
         : [];
-      const admin = contactId && pideDemo(body.data.reason, ficha?.ficha) ? await adminPrincipal(organizationId) : null;
+      const admin = modoSyrtel() && contactId && pideDemo(body.data.reason, ficha?.ficha) ? await adminPrincipal(organizationId) : null;
       if (contactId && admin) {
         // Syrtel — una demo la agenda el administrador: el prospecto queda a
         // su nombre, sin mensaje de presentación al cliente.
@@ -125,6 +127,8 @@ export async function POST(req: Request) {
             .catch((err) => console.error("[syrtel] cotización de prueba en la demo falló:", err));
         }
       } else if (contactId) {
+        // Un cliente de un asesor que escribe desde otro número vuelve a su asesor.
+        await reconocerCliente(organizationId, contactId).catch(() => null);
         const destino = await destinoDeTransferencia(organizationId, contactId);
         const quien = destino.miembro?.nombre ?? "el equipo";
         const texto =

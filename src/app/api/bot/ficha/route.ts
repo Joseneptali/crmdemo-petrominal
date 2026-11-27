@@ -5,6 +5,7 @@ import { apiError, parseBody } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { upsertFicha } from "@/server/bot/ficha";
 import { pidePrueba, yaSalio } from "@/lib/cotizacion-prueba";
+import { modoSyrtel } from "@/server/modo";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,7 @@ export async function PUT(req: Request) {
     .limit(1);
   const antes = (previa?.ficha ?? {}) as Record<string, unknown>;
   const parche = { ...body.data.ficha };
-  const pidio = "cotizacion_prueba" in parche && pidePrueba(parche.cotizacion_prueba) && !yaSalio(antes.cotizacion_prueba);
+  const pidio = modoSyrtel() && "cotizacion_prueba" in parche && pidePrueba(parche.cotizacion_prueba) && !yaSalio(antes.cotizacion_prueba);
   if ("cotizacion_prueba" in parche && yaSalio(antes.cotizacion_prueba)) delete parche.cotizacion_prueba;
   if (pidio) parche.cotizacion_prueba = "enviando";
 

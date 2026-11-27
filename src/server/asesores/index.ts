@@ -1,4 +1,4 @@
-import { and, asc, eq, type SQL } from "drizzle-orm";
+import { and, asc, eq, isNotNull, type SQL } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { scoped } from "@/lib/db/tenant";
@@ -322,4 +322,60 @@ export async function presentarAsesorAlCliente(
       }.`
     ).catch(() => {});
   }
+}
+
+/**
+ * Petrominal — la IA reconoce a un cliente que ya es de un asesor aunque
+ * escriba desde otro número: si este contacto no tiene asesor y otro contacto
+ * con asesor comparte su NIT, su correo o el nombre de su empresa, se le asigna
+ * ese mismo asesor. Devuelve el asesor asignado, o null.
+ */
+export async function reconocerCliente(organizationId: string, contactId: string): Promise<MiembroDto | null> {
+  const db = getDb();
+  const [yo] = await db
+    .select({ asesor: schema.contact.asesorUserId, ficha: schema.contact.ficha, nombre: schema.contact.name })
+    .from(schema.contact)
+    .where(and(eq(schema.contact.organizationId, organizationId), eq(schema.contact.id, contactId)))
+    .limit(1);
+  if (!yo || yo.asesor) return null;
+  const { CLAVES, deFicha } = await import("@/server/cotizaciones");
+  const norm = (t: string | null) =>
+    (t ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\b(s\.?a\.?s\.?|ltda|s\.?a\.?)\b/g, "").replace(/[^a-z0-9]/g, "");
+  const digitos = (t: string | null) => (t ?? "").replace(/\D/g, "").slice(0, 9);
+  const mio = {
+    correo: (deFicha(yo.ficha, CLAVES.correo) ?? "").toLowerCase(),
+    nit: digitos(deFicha(yo.ficha, CLAVES.nit)),
+    empresa: norm(deFicha(yo.ficha, CLAVES.empresa)),
+  };
+  if (!mio.correo && mio.nit.length < 6 && mio.empresa.length < 4) return null;
+  const otros = await db
+    .select({ id: schema.contact.id, asesor: schema.contact.asesorUserId, ficha: schema.contact.ficha, nombre: schema.contact.name })
+    .from(schema.contact)
+    .where(and(eq(schema.contact.organizationId, organizationId), isNotNull(schema.contact.asesorUserId)));
+  for (const o of otros) {
+    if (o.id === contactId || !o.asesor) continue;
+    const suyo = {
+      correo: (deFicha(o.ficha, CLAVES.correo) ?? "").toLowerCase(),
+      nit: digitos(deFicha(o.ficha, CLAVES.nit)),
+      empresa: norm(deFicha(o.ficha, CLAVES.empresa)),
+    };
+    const porque =
+      mio.nit.length >= 6 && mio.nit === suyo.nit
+        ? `el NIT ${mio.nit}`
+        : mio.correo && mio.correo === suyo.correo
+          ? `el correo ${mio.correo}`
+          : mio.empresa.length >= 4 && mio.empresa === suyo.empresa
+            ? "la misma empresa"
+            : null;
+    if (!porque) continue;
+    const miembros = await listarMiembros(organizationId);
+    const asesor = miembros.find((m) => m.userId === o.asesor);
+    if (!asesor) continue;
+    await asignarAsesor(organizationId, contactId, asesor.userId, {
+      presentar: false,
+      nota: `🔎 La IA reconoció al cliente (comparte ${porque} con ${o.nombre ?? "otro contacto"}): se asignó a su asesor ${asesor.nombre}.`,
+    });
+    return asesor;
+  }
+  return null;
 }

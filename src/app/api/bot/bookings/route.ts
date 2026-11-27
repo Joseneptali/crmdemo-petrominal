@@ -1,8 +1,4 @@
-import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb, schema } from "@/lib/db";
-import { clinicaActiva } from "@/server/clinica";
-import { moverCita, reservarHorario } from "@/server/clinica/bot";
 import { apiError, parseBody } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
 import { agendaDisabledResponse, agendaEnabled } from "@/server/agenda/flag";
@@ -45,10 +41,6 @@ export async function POST(req: Request) {
   const body = await parseBody(req, createSchema);
   if (!body.ok) return body.response;
 
-  if (await clinicaActiva(gate.organizationId)) {
-    return reservarHorario(gate.organizationId, body.data.conversationId, body.data.startUtc);
-  }
-
   try {
     const result = await createSessionBooking({
       organizationId: gate.organizationId,
@@ -71,16 +63,6 @@ export async function PATCH(req: Request) {
 
   const body = await parseBody(req, rescheduleSchema);
   if (!body.ok) return body.response;
-
-  if (await clinicaActiva(gate.organizationId)) {
-    const [conv] = await getDb()
-      .select({ contactId: schema.conversation.contactId })
-      .from(schema.conversation)
-      .where(and(eq(schema.conversation.organizationId, gate.organizationId), eq(schema.conversation.id, body.data.conversationId)))
-      .limit(1);
-    if (!conv) return apiError(404, "not_found", "Conversación no encontrada");
-    return moverCita(gate.organizationId, body.data.conversationId, conv.contactId, body.data.startUtc);
-  }
 
   try {
     const result = await rescheduleForConversation({

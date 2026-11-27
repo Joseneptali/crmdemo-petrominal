@@ -44,6 +44,15 @@ export function deFicha(ficha: unknown, claves: string[]): string | null {
     if (typeof v === "string" && v.trim()) return v.trim();
     if (typeof v === "number") return String(v);
   }
+  // La IA a veces deja los datos en «notas» con etiquetas: «Empresa: X; NIT: Y; …».
+  const buscadas = new Set(claves.map(normal));
+  for (const v of Object.values(f)) {
+    if (typeof v !== "string") continue;
+    for (const parte of v.split(/[;\n|]/)) {
+      const m = /^\s*([^:]{2,30}):\s*(.+?)\s*$/.exec(parte);
+      if (m?.[1] && m[2] && buscadas.has(normal(m[1])) && !/^(n\/?a|ninguno|pendiente|-+)$/i.test(m[2])) return m[2];
+    }
+  }
   // El correo se rescata aunque la IA lo haya dejado dentro de otra clave (p. ej. «notas»).
   if (claves === CLAVES.correo) return correoEnTexto(Object.values(f));
   return null;
@@ -64,6 +73,7 @@ export function correoEnTexto(valores: unknown[]): string | null {
 export const CLAVES = {
   correo: ["correo", "email", "correo_electronico", "correoelectronico", "e-mail", "mail"],
   empresa: ["empresa", "company", "razon_social", "razonsocial", "compania"],
+  nombre: ["nombre", "nombre_completo", "contacto", "cliente"],
   nit: ["nit", "nit_empresa", "documento", "rut"],
   ciudad: ["ciudad", "city", "municipio"],
   direccion: ["direccion", "address", "direccion_empresa", "domicilio"],

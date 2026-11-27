@@ -4,6 +4,7 @@ import {
 } from "@/server/channels/capabilities";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { modoSyrtel } from "@/server/modo";
 import { getDb, schema } from "@/lib/db";
 import { apiError, parseBody } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
     // Syrtel — si la IA le prometió al prospecto la cotización de ejemplo, el
     // CRM la envía ya (en segundo plano: la respuesta del bot no espera).
     const texto = body.data.text;
-    void import("@/server/cotizacion-prueba")
+    if (modoSyrtel()) void import("@/server/cotizacion-prueba")
       .then((m) => m.siLaPrometio(organizationId, body.data.conversationId, texto))
       .catch((err) => console.error("[syrtel] cotización de prueba prometida falló:", err));
     return Response.json({ messageId: result.messageId });
